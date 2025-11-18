@@ -1,0 +1,36 @@
+﻿@model CrossTrainingPlatform.Models.ViewModels.RegisterViewModel
+
+<h2>Create Account</h2>
+
+<form method="post">
+    <div>
+        <label>Name</label>
+        <input asp-for="Name" />
+        <span asp-validation-for="Name"></span>
+    </div>
+
+    <div>
+        <label>Family Name</label>
+        <input asp-for="FamilyName" />
+        <span asp-validation-for="FamilyName"></span>
+    </div>
+
+    <div>
+        <label>Email</label>
+        <input asp-for="Email" />
+        <span asp-validation-for="Email"></span>
+    </div>
+
+    <div>
+        <label>Password</label>
+        <input asp-for="Password" type="password" />
+        <span asp-validation-for="Password"></span>
+    </div>
+
+    <button type="submit">Register</button>
+
+    <p>
+        Already have an account?
+        <a href="/UserAuth/Login">Login</a>
+    </p>
+</form>
