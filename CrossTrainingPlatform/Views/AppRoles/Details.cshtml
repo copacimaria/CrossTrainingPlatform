@@ -1,0 +1,332 @@
+﻿@using System.Security.Claims
+@using X.PagedList.Mvc.Core
+@model CrossTrainingPlatform.Models.ViewModels.AppRolesClaimsViewModel
+
+
+<br />
+<br />
+
+
+
+<!-- Modale -->
+<div class="modal fade" id="addClaimModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog" style="width:40rem">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adaugare drepturi:</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contentAddClaim"></div>
+        </div>
+    </div>
+</div>
+
+
+
+<div class="d-flex justify-content-left mt-4">
+    <a asp-action="Index" asp-controller="AppRoles" class="btn btn-link btn-lg">
+        <i class="bi bi-arrow-left"></i> Inapoi la roluri
+    </a>
+</div>
+
+
+<br />
+
+<div class="d-flex justify-content-between align-items-center" style="padding:0.5rem; margin-right:1rem;">
+    <h1 class="mb-0">Rolul: @Model.Role.RoleName</h1>
+    @if (User.HasClaim(c => c.Value == "AddClaim"))
+    {
+        <button onclick="loadAddClaim('@Model.Role.RoleId')"
+                data-bs-toggle="modal"
+                data-bs-target="#addClaimModal"
+                class="btn btn-dark fw-bold">
+            <i class="bi bi-plus-circle me-2"></i>
+            Adauga drepturi in rol
+        </button>
+    }
+</div>
+
+
+<div class="col">
+
+    <!-- Filtre -->
+    <div class="d-flex mb-3 gap-3" style="margin-left:0.5rem;">
+            <div>
+                <input type="hidden" id="id" value="@Model.Role.RoleId" />
+                <label for="claimSearchInRole" class="form-label mb-0" style="margin-left:0.5rem; font-size: 1rem; font-weight:bold">
+                    Cauta claim:
+                </label>
+                <input type="text" id="claimSearchInRole" name="claimSearchInRole" placeholder="Cauta dupa nume"
+                       class="form-control form-control-sm" style="width:12.5rem"
+                       value="@(!string.IsNullOrEmpty(ViewBag.SelectedClaim) ? ViewBag.SelectedClaim : "")">
+            </div>
+            <button type="button" class="btn btn-success mt-4" style="font-weight:bold" onclick="searchClaimInRole()">
+                <i class="bi bi-search"></i> Filtreaza
+            </button>
+            <button type="button" class="btn btn-danger mt-4" style="font-weight:bold" onclick="resetFilters()">
+                <i class="bi bi-x-circle"></i> Reseteaza
+            </button>
+      
+    </div>
+
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th style="font-weight:bold">Nume drept</th>
+                <th></th>
+
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null)
+            {
+                foreach (var item in Model.Claims)
+                {
+                    <tr>
+                        <td>@Html.DisplayFor(m => item.ClaimName)</td>
+
+                        <td>
+                            @if (User.HasClaim(c => c.Value == "RemoveClaim"))
+                            {
+                                <button onclick="loadRemoveClaim('@item.ClaimId', '@Model..Id')" class="delete-link">
+                                    <i class="bi bi-dash-circle"></i>
+                                </button>
+                            }
+                        </td>
+
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <!-- Paginare -->
+    <div class="pagination-container d-flex justify-content-center mb-5">
+        @Html.PagedListPager(Model.Claims, page =>
+        Url.Action("Details", "AppRoles", new
+        {
+            id = Model.Role.RoleId,
+            claimSearchInRole = ViewBag.SelectedClaim,
+            page
+        })
+                )
+    </div>
+</div>
+
+
+
+
+<script>
+
+    function resetFilters() {
+        const roleId = document.getElementById('id').value;
+        document.getElementById('claimSearchInRole').value = '';
+        window.location.href = `/AppRoles/Details?id=${roleId}`;
+    }
+
+    function searchClaimInRole(){
+        var appClaimInRole = document.getElementById('claimSearchInRole').value;
+        var roleId = document.getElementById('id').value;
+        var url = `/AppRoles/Details?id=${roleId}&claimSearchInRole=${encodeURIComponent(appClaimInRole)}&applyFilter=true`;
+        window.location.href = url;
+    }
+
+    document.addEventListener( "keydown", function( e ) {
+        var keyCode = e.keyCode || e.which;
+        if ( keyCode === 13 ) {
+          searchClaimInRole();
+        }
+    }, false);
+
+    async function loadRemoveClaim(claimId, roleId) {
+
+
+        if (!roleId || !claimId) {
+            alert('Datele nu exista!');
+            return;
+        }
+
+        const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        const token = tokenInput ? tokenInput.value : '';
+
+        const body = `RoleID=${encodeURIComponent(roleId)}&ClaimID=${encodeURIComponent(claimId)}`;
+
+        const response = await fetch('/AppRoles/RemoveClaim', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'RequestVerificationToken': token
+            },
+            body: body
+        });
+
+        const text = await response.text();
+        let result;
+        try {
+            result = JSON.parse(text);
+        } catch (e) {
+            console.error('Raspunsul nu este JSON, este:', text);
+            return;
+        }
+
+        if (result.success) {
+             sessionStorage.setItem('showToastClaimRemoved', 'true');
+             location.reload();
+        } else {
+            alert(result.errors ? result.errors.join("\n") : 'Eroare necunoscuta');
+        }
+    }
+
+
+
+    function loadAddClaim(id) {
+        fetch(`@Url.Action("AddClaim", "AppRoles")/${id}`)
+            .then(response => response.text())
+            .then(html => {
+                 const container = document.getElementById('contentAddClaim');
+                if (!container) {
+                    console.error('Container modal nu exista!');
+                    return;
+                }
+
+                container.innerHTML = html;
+
+                  const modalEl = document.getElementById('addClaimModal');
+                if (!modalEl) {
+                    console.error('Modal element nu exista!');
+                    return;
+                }
+
+                const modal = new bootstrap.Modal(modalEl, { backdrop: true });
+                modal.show();
+
+            })
+            .catch(err => console.error(err));
+    }
+
+
+    async function addClaimFct(idRole) {
+
+        const claimToken = document.getElementById('selectedClaimToken').value;
+
+        if (!idRole || !claimToken) {
+            alert('Selectati un claim si completati datele!');
+            return;
+        }
+
+        const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        const token = tokenInput ? tokenInput.value : '';
+
+        const body = `RoleID=${encodeURIComponent(idRole)}&ClaimToken=${encodeURIComponent(claimToken)}`;
+
+        const response = await fetch('/AppRoles/AddClaim', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'RequestVerificationToken': token
+            },
+            body: body
+        });
+
+        const text = await response.text();
+        let result;
+        try {
+            result = JSON.parse(text);
+        } catch (e) {
+            console.error('Raspunsul nu este JSON, este:', text);
+            return;
+        }
+
+        if (result.success) {
+            sessionStorage.setItem('showToastClaimAdded', 'true');
+            location.reload();
+        } else {
+            alert(result.errors ? result.errors.join("\n") : 'Eroare necunoscuta');
+        }
+    }
+
+
+    function searchClaim() {
+        const searchTerm = document.getElementById('claimSearch').value;
+        const allClaimsJson = document.getElementById('allClaimsJson').value; 
+        const allClaims = JSON.parse(allClaimsJson);
+
+        fetch('@Url.Action("SearchClaim", "AppRoles")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ searchTerm, claims: allClaims })
+        })
+        .then(response => response.json())
+        .then(res => {
+            let resultsList = '';
+            if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+                   res.data.forEach(item => {
+                        resultsList += `<li class="dropdown-item"
+                                           data-token="${item.token}"
+                                           onclick="selectClaim(this)">${item.claimName}</li>`;
+                    });
+
+                document.getElementById('searchResults').style.display = 'block';
+            } else {
+                resultsList = '<li class="dropdown-item disabled">No results found</li>';
+                document.getElementById('searchResults').style.display = 'block';
+            }
+            document.getElementById('searchResults').innerHTML = resultsList;
+        });
+    }
+
+
+    function selectClaim(li) {
+        const token = li.getAttribute('data-token');
+        const name = li.textContent;
+
+        document.getElementById('claimSearch').value = name;
+        document.getElementById('selectedClaimToken').value = token; 
+
+        document.getElementById('searchResults').innerHTML = '';
+        document.getElementById('searchResults').style.display = 'none';
+    }
+
+
+       //daca raname backdropul din modal
+    document.addEventListener('hidden.bs.modal', function (event) {
+        // elimină backdrop-ul dacă mai rămâne
+        document.querySelectorAll('.modal-backdrop').forEach(function (el) {
+            el.remove();
+        });
+        // elimină clasa modal-open din body
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('padding-right');
+    });
+
+
+
+    window.onload = function() {
+        if(sessionStorage.getItem('showToastClaimAdded') === 'true') {
+            Toastify({
+                text: "Dreptul a fost adaugat!",
+                duration: 3000,
+                close: true,
+                gravity: "bottom",
+                position: "center",
+                style: { background: "green" },
+            }).showToast();
+            sessionStorage.removeItem('showToastClaimAdded');
+        }
+
+        if(sessionStorage.getItem('showToastClaimRemoved') === 'true') {
+            Toastify({
+                text: "Dreptul a fost eliminat!",
+                duration: 3000,
+                close: true,
+                gravity: "bottom",
+                position: "center",
+                style: { background: "red" },
+            }).showToast();
+            sessionStorage.removeItem('showToastClaimRemoved');
+        }
+
+    }
+
+
+</script>

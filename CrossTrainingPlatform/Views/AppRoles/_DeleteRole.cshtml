@@ -1,0 +1,23 @@
+﻿@model CrossTrainingPlatform.Models.UserManagementModels.AppRole
+@Html.AntiForgeryToken()
+
+<h1 style="margin-top: 5px">Sunteti sigur ca vreti sa stergeti acest rol?</h1>
+<hr />
+<dl class="row" style="text-align: left; margin-left: 0px; font-size:1.3rem;">
+    <dt class="col-sm-4">
+        Rolul:
+    </dt>
+    <dd class="col-sm-8">
+        @Html.DisplayFor(model => model.RoleName)
+    </dd>
+ 
+</dl>
+
+<br />
+
+<div class="d-flex justify-content-center">
+    <button type="button"
+            class="btn btn-danger"
+            onclick="postDeleteRole('@Model.RoleId')" />
+    Confirma stergerea
+</div>
