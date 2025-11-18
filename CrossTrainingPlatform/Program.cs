@@ -1,7 +1,13 @@
+using CrossTrainingPlatform.Services.DatabaseServices;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+
+//services injection for Supabase
+builder.Services.AddSingleton<SupabaseService>();
 
 var app = builder.Build();
 
