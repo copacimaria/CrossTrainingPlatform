@@ -9,7 +9,7 @@ namespace CrossTrainingPlatform.Models
         public int GameId { get; set; }
         public string GameName { get; set; }
         public bool IsActive { get; set; } = true;
-       
+        
 
         public List<AppUser>? UserList { get; set; }
 

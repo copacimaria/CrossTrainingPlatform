@@ -17,6 +17,388 @@ html {
   min-height: 100%;
 }
 
-body {
-  margin-bottom: 60px;
+
+
+.page-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 80px); /* ajustabil daca ai un header */
+    padding-top: 40px;
+    padding-bottom: 40px;
 }
+
+
+/* Glow animat pe contur */
+@keyframes borderGlow {
+    0% {
+        box-shadow: 0 0 12px rgba(0, 153, 255, 0.2), 0 0 25px rgba(0, 153, 255, 0.15);
+        border-color: rgba(0, 153, 255, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 18px rgba(0, 153, 255, 0.35), 0 0 40px rgba(0, 153, 255, 0.25);
+        border-color: rgba(0, 153, 255, 0.35);
+    }
+
+    100% {
+        box-shadow: 0 0 12px rgba(0, 153, 255, 0.2), 0 0 25px rgba(0, 153, 255, 0.15);
+        border-color: rgba(0, 153, 255, 0.2);
+    }
+}
+
+.register-container {
+    width: 420px;
+    padding: 30px;
+    border-radius: 18px;
+    background: rgba(25, 25, 25, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(16px);
+    animation: borderGlow 4s infinite ease-in-out;
+    color: #dcdcdc;
+}
+
+    .register-container h2 {
+        text-align: center;
+        margin-bottom: 28px;
+        font-weight: 600;
+        color: #ffffff;
+    }
+
+.form-group {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+    .form-group label {
+        margin-bottom: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #cfcfcf;
+    }
+
+    .form-group input {
+        padding: 11px 14px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+        font-size: 14px;
+        transition: 0.2s;
+    }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #4aa3ff;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 8px rgba(74, 163, 255, 0.35);
+        }
+
+    .form-group span {
+        color: #ff5c5c;
+        font-size: 13px;
+        margin-top: 4px;
+    }
+
+.register-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #0062ff, #003bcc);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    margin-top: 5px;
+    transition: 0.2s;
+}
+
+    .register-btn:hover {
+        background: linear-gradient(135deg, #1a75ff, #0030a8);
+        box-shadow: 0 0 12px rgba(0, 113, 255, 0.5);
+    }
+
+.login-link {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 14px;
+    color: #c1c1c1;
+}
+
+    .login-link a {
+        color: #4aa3ff;
+        text-decoration: none;
+        transition: 0.2s;
+    }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+body {
+    background: #0d0d0d;
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.page-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 80px);
+    padding: 40px 0;
+}
+
+@keyframes borderGlow {
+    0% {
+        box-shadow: 0 0 12px rgba(0,153,255,0.2), 0 0 25px rgba(0,153,255,0.15);
+        border-color: rgba(0,153,255,0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 18px rgba(0,153,255,0.35), 0 0 40px rgba(0,153,255,0.25);
+        border-color: rgba(0,153,255,0.35);
+    }
+
+    100% {
+        box-shadow: 0 0 12px rgba(0,153,255,0.2), 0 0 25px rgba(0,153,255,0.15);
+        border-color: rgba(0,153,255,0.2);
+    }
+}
+
+.login-container {
+    width: 380px;
+    padding: 30px;
+    border-radius: 18px;
+    background: rgba(25, 25, 25, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(16px);
+    animation: borderGlow 4s infinite ease-in-out;
+    color: #dcdcdc;
+}
+
+    .login-container h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        font-weight: 600;
+        color: #fff;
+    }
+
+.form-group {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+    .form-group label {
+        margin-bottom: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #cfcfcf;
+    }
+
+    .form-group input {
+        padding: 11px 14px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #fff;
+        font-size: 14px;
+        transition: 0.2s;
+    }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #4aa3ff;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 8px rgba(74, 163, 255, 0.35);
+        }
+
+    .form-group span {
+        color: #ff5c5c;
+        font-size: 13px;
+        margin-top: 4px;
+    }
+
+.login-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #0062ff, #003bcc);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    margin-top: 5px;
+    transition: 0.2s;
+}
+
+    .login-btn:hover {
+        background: linear-gradient(135deg, #1a75ff, #0030a8);
+        box-shadow: 0 0 12px rgba(0, 113, 255, 0.5);
+    }
+
+.register-link {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 14px;
+    color: #c1c1c1;
+}
+
+    .register-link a {
+        color: #4aa3ff;
+        text-decoration: none;
+    }
+
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+
+.domain-container {
+    width: 420px;
+    padding: 30px;
+    border-radius: 18px;
+    background: rgba(25, 25, 25, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(16px);
+    animation: borderGlow 4s infinite ease-in-out;
+    color: #dcdcdc;
+}
+
+    .domain-container h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        font-weight: 600;
+        color: #ffffff;
+    }
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+}
+
+    .form-group label {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: #cfcfcf;
+    }
+
+    .form-group select {
+        padding: 11px 14px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+        font-size: 14px;
+        transition: 0.2s;
+    }
+
+        .form-group select:focus {
+            outline: none;
+            border-color: #4aa3ff;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 8px rgba(74, 163, 255, 0.35);
+        }
+
+.submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #0062ff, #003bcc);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: 0.2s;
+}
+
+    .submit-btn:hover {
+        background: linear-gradient(135deg, #1a75ff, #0030a8);
+        box-shadow: 0 0 12px rgba(0, 113, 255, 0.5);
+    }
+
+.form-group select,
+.form-group select option {
+    color: #ffffff !important;
+    background-color: #1a1a1a !important;
+}
+
+
+@keyframes cardGlow {
+    0% {
+        box-shadow: 0 0 10px rgba(0,153,255,0.18);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(0,153,255,0.32);
+    }
+
+    100% {
+        box-shadow: 0 0 10px rgba(0,153,255,0.18);
+    }
+}
+
+/* Grid pentru cardurile de jocuri */
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 25px;
+    padding: 20px;
+}
+
+/* Card de joc */
+.game-card {
+    background: rgba(30, 30, 30, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 20px;
+    color: #e1e1e1;
+    animation: cardGlow 4s infinite ease-in-out;
+    transition: 0.3s;
+}
+
+    .game-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 0 25px rgba(0,153,255,0.45);
+    }
+
+.game-name {
+    font-size: 20px;
+    font-weight: 600;
+    text-align: center;
+    color: #ffffff;
+    margin-bottom: 15px;
+}
+
+.game-body p {
+    margin: 6px 0;
+    font-size: 14px;
+}
+
+.game-body strong {
+    color: #4aa3ff;
+    font-weight: 600;
+}
+
+/* Badge suitable */
+.suitable {
+    margin-top: 15px;
+    text-align: center;
+}
+
+    .suitable span {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 12px;
+        background: rgba(0,153,255,0.2);
+        border: 1px solid rgba(0,153,255,0.4);
+        color: #4aa3ff;
+        font-size: 14px;
+        font-weight: 600;
+        backdrop-filter: blur(6px);
+    }

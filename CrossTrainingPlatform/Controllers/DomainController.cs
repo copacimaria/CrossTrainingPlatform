@@ -55,7 +55,7 @@ namespace CrossTrainingPlatform.Controllers
             if (domain == null)
                 return NotFound();
 
-            return View(domain);
+            return View("_editDomain", domain);
         }
 
         [HttpPost]

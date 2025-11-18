@@ -1,5 +1,6 @@
 ﻿using CrossTrainingPlatform.Models;
 using CrossTrainingPlatform.Models.DTOs;
+using CrossTrainingPlatform.Models.ViewModels;
 using CrossTrainingPlatform.Services.DatabaseServices;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -17,55 +18,69 @@ namespace CrossTrainingPlatform.Controllers
         }
 
 
+        private List<Game> ParseGames(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return new List<Game>();
+
+            try
+            {
+                var token = JToken.Parse(json);
+
+                if (token.Type == JTokenType.Array)
+                    return token.ToObject<List<Game>>() ?? new List<Game>();
+
+                var arr =
+                    token["data"] ??
+                    token["result"] ??
+                    token;
+
+                if (arr.Type == JTokenType.Array)
+                    return arr.ToObject<List<Game>>() ?? new List<Game>();
+
+                return new List<Game>();
+            }
+            catch
+            {
+                return new List<Game>();
+            }
+        }
+
+
+
         [HttpPost]
         public async Task<IActionResult> DisplayGamesBasedOnDomain(int? DomainId)
         {
-            string endpoint = DomainId.HasValue
+            string endpointGameForSelectedDomain = DomainId.HasValue
                 ? $"Game?DomainId=eq.{DomainId.Value}"
                 : "Game";
 
-            string resultJson;
             try
             {
-                resultJson = await _supabase.GetAsync(endpoint);
-            }
-            catch (HttpRequestException)
-            {
-                // Supabase GET failed (network/error); return empty list or show an error view/message
-                return View("Index", new List<Game>());
-            }
+                var resultSelectedDomain = await _supabase.GetAsync(endpointGameForSelectedDomain);
+                var resultAll = await _supabase.GetAsync("Game");
 
-            var games = new List<Game>();
+                var gamesForDomain = ParseGames(resultSelectedDomain);
+                var allGames = ParseGames(resultAll);
 
-            try
-            {
-                if (!string.IsNullOrWhiteSpace(resultJson))
+                var vm = new GamesViewModel
                 {
-                    var token = JToken.Parse(resultJson);
+                    AllGames = allGames,
+                    GamesForSelectedDomain = gamesForDomain
+                };
 
-                    if (token.Type == JTokenType.Array)
-                    {
-                        games = token.ToObject<List<Game>>() ?? new List<Game>();
-                    }
-                    else if (token.Type == JTokenType.Object)
-                    {
-                        // If Supabase wrapped the data, try common properties
-                        var arr = token.SelectToken("data") ?? token.SelectToken("result") ?? token;
-                        if (arr != null && arr.Type == JTokenType.Array)
-                            games = arr.ToObject<List<Game>>() ?? new List<Game>();
-                        else
-                            games = new List<Game>();
-                    }
-                }
+                return View("Index", vm);
             }
-            catch (JsonReaderException)
+            catch
             {
-                // Malformed JSON — fall back to empty list
-                games = new List<Game>();
+                return View("Index", new GamesViewModel
+                {
+                    AllGames = new List<Game>(),
+                    GamesForSelectedDomain = new List<Game>()
+                });
             }
-
-            return View("Index", games);
         }
+
     }
 }
 
