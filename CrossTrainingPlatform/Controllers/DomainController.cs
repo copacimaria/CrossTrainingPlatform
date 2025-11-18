@@ -1,0 +1,97 @@
+﻿using CrossTrainingPlatform.Models;
+using CrossTrainingPlatform.Services.DatabaseServices;
+using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
+
+namespace CrossTrainingPlatform.Controllers
+{
+    public class DomainController : Controller
+    {
+        private readonly SupabaseService _supabase;
+
+        public DomainController(SupabaseService supabase)
+        {
+            _supabase = supabase;
+        }
+
+        // ------------------- INDEX -------------------
+        public async Task<IActionResult> Index()
+        {
+            string response = await _supabase.GetAsync("Domain?select=*");
+            var domains = JsonSerializer.Deserialize<List<Domain>>(response);
+            return View(domains);
+        }
+
+        // ------------------- CREATE -------------------
+        [HttpGet]
+        public IActionResult Create()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create(Domain domain)
+        {
+            if (!ModelState.IsValid)
+                return View(domain);
+
+            var newDomain = new
+            {
+                DomainName = domain.DomainName,
+                IsActive = domain.IsActive,
+                GameId = domain.GameId
+            };
+
+            await _supabase.PostAsync("Domain", newDomain);
+            return RedirectToAction("Index");
+        }
+
+        // ------------------- EDIT -------------------
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id)
+        {
+            string response = await _supabase.GetAsync($"Domain?DomainId=eq.{id}");
+            var domain = JsonSerializer.Deserialize<List<Domain>>(response)?.FirstOrDefault();
+            if (domain == null)
+                return NotFound();
+
+            return View(domain);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit(int id, Domain domain)
+        {
+            if (!ModelState.IsValid)
+                return View(domain);
+
+            var updatedDomain = new
+            {
+                DomainName = domain.DomainName,
+                IsActive = domain.IsActive,
+                GameId = domain.GameId
+            };
+
+            await _supabase.PatchAsync($"Domain?DomainId=eq.{id}", updatedDomain);
+            return RedirectToAction("Index");
+        }
+
+        // ------------------- DELETE -------------------
+        [HttpGet]
+        public async Task<IActionResult> Delete(int id)
+        {
+            string response = await _supabase.GetAsync($"Domain?DomainId=eq.{id}");
+            var domain = JsonSerializer.Deserialize<List<Domain>>(response)?.FirstOrDefault();
+            if (domain == null)
+                return NotFound();
+
+            return View(domain);
+        }
+
+        [HttpPost, ActionName("Delete")]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            await _supabase.DeleteAsync($"Domain?DomainId=eq.{id}");
+            return RedirectToAction("Index");
+        }
+    }
+}
