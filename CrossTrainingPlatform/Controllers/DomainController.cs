@@ -93,5 +93,17 @@ namespace CrossTrainingPlatform.Controllers
             await _supabase.DeleteAsync($"Domain?DomainId=eq.{id}");
             return RedirectToAction("Index");
         }
+
+        public async Task<IActionResult> SelectDomain()
+        {
+            string response = await _supabase.GetAsync("Domain?IsActive=eq.true&select=*");
+            var domains = JsonSerializer.Deserialize<List<Domain>>(response);
+
+            ViewBag.DomainList = domains;
+
+            return View();
+        }
+
+
     }
 }

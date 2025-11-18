@@ -1,0 +1,14 @@
+﻿@model CrossTrainingPlatform.Models.Domain
+
+<h2>Select Domain</h2>
+
+<form method="post" asp-action="DoSomethingWithDomain">
+    <div>
+        <label>Select Domain:</label>
+        <select asp-for="DomainId" asp-items="@(new SelectList(ViewBag.DomainList, "DomainId", "DomainName"))">
+            <option value="">-- Select Domain --</option>
+        </select>
+    </div>
+
+    <button type="submit">Submit</button>
+</form>

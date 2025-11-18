@@ -1,1 +1,27 @@
-﻿
+﻿@model List<CrossTrainingPlatform.Models.Domain>
+
+<h2>Domains</h2>
+<a asp-action="Create">Create New Domain</a>
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Active</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.DomainName</td>
+                <td>@item.IsActive</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.DomainId">Edit</a> |
+                    <a asp-action="Delete" asp-route-id="@item.DomainId">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

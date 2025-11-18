@@ -1,0 +1,23 @@
+﻿@model CrossTrainingPlatform.Models.Domain
+
+<h2>Create Domain</h2>
+
+<form method="post">
+    <div>
+        <label>Domain Name</label>
+        <input asp-for="DomainName" />
+        <span asp-validation-for="DomainName"></span>
+    </div>
+
+    <div>
+        <label>Is Active</label>
+        <input asp-for="IsActive" type="checkbox" />
+    </div>
+
+    <div>
+        <label>GameId (optional)</label>
+        <input asp-for="GameId" type="number" />
+    </div>
+
+    <button type="submit">Save</button>
+</form>
