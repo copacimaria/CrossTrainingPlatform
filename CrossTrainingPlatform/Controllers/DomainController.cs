@@ -26,7 +26,7 @@ namespace CrossTrainingPlatform.Controllers
         [HttpGet]
         public IActionResult Create()
         {
-            return View();
+            return View("_createDomain");
         }
 
         [HttpPost]

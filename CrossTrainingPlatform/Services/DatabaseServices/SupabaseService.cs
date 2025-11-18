@@ -22,6 +22,17 @@ namespace CrossTrainingPlatform.Services.DatabaseServices
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {_key}");
 
             var response = await client.GetAsync($"{_url}/rest/v1/{endpoint}");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+                return "[]"; // safe empty JSON array
+
+            if (!response.IsSuccessStatusCode)
+            {
+                // optional: throw or return an error JSON you can detect in callers
+                var err = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"Supabase GET failed ({response.StatusCode}): {err}");
+            }
+
             return await response.Content.ReadAsStringAsync();
         }
 

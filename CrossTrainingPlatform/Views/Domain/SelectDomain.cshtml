@@ -2,7 +2,7 @@
 
 <h2>Select Domain</h2>
 
-<form method="post" asp-action="DoSomethingWithDomain">
+<form method="post" asp-action="DisplayGamesBasedOnDomain" asp-controller="Games">
     <div>
         <label>Select Domain:</label>
         <select asp-for="DomainId" asp-items="@(new SelectList(ViewBag.DomainList, "DomainId", "DomainName"))">
@@ -12,3 +12,9 @@
 
     <button type="submit">Submit</button>
 </form>
+
+
+<p>
+    create domain
+    <a href="/Domain/Index">add</a>
+</p>
