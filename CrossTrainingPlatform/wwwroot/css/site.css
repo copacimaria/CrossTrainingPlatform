@@ -466,7 +466,7 @@ body {
 .close-btn {
     position: absolute;
     top: 15px;
-    right: 15px; /* Îl pune în dreapta sus */
+    right: 15px; 
     background: transparent;
     border: none;
     font-size: 26px;
