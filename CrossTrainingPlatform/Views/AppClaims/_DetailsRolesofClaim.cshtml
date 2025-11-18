@@ -1,0 +1,26 @@
+﻿@model CrossTrainingPlatform.Models.UserManagementModels.AppClaim
+
+@Html.AntiForgeryToken()
+
+<dl class="row" style="text-align: left; margin-left: 0px; font-size:1rem;">
+    <dt >
+        Claim-ul:
+    </dt>
+    <dd >
+        @Html.DisplayFor(model => model.ClaimName)
+    </dd>
+
+    <dt>
+        Rolurile asociate acestui claim:
+    </dt>
+    <dd>
+        <ul style="padding-left: 20px; margin: 0;">
+            @foreach (var role in Model.RoleList)
+            {
+                <dd>
+                    - @role.RoleName
+                </dd>
+            }
+        </ul>
+    </dd>
+</dl>
