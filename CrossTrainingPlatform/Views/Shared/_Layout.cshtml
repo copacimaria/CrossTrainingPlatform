@@ -20,12 +20,19 @@
             <div class="container-fluid d-flex justify-content-center align-items-center position-relative">
 
 
-                <!-- Hamburger menu stanga -->
-                <button id="sidebarToggle" class="hamburger-btn me-3" aria-label="Toggle sidebar">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
+                @{
+                    var userId = Context.Session.GetInt32("UserId"); // sau User.Identity.IsAuthenticated
+                }
+
+                @if (userId != null)
+                {
+                    <!-- Hamburger menu stanga -->
+                    <button id="sidebarToggle" class="hamburger-btn me-3" aria-label="Toggle sidebar">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                }
 
                 <!-- Brand central -->
                 <a class="navbar-brand site-title">
