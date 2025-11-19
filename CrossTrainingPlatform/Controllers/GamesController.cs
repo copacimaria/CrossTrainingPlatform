@@ -212,6 +212,31 @@ namespace CrossTrainingPlatform.Controllers
         }
 
 
+        [HttpGet]
+        public async Task<IActionResult> Delete(int id)
+        {
+            string gameJson = await _supabase.GetAsync($"Game?GameId=eq.{id}");
+            var games = JsonConvert.DeserializeObject<List<Game>>(gameJson);
+            var game = games.FirstOrDefault();
+
+            if (game == null)
+                return NotFound();
+
+            return PartialView("_DeleteGame", game);
+        }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PostDelete(int gameId)
+        {
+            var updateData = new { IsActive = false };
+            var result = await _supabase.PatchAsync($"Game?GameId=eq.{gameId}", updateData);
+
+            return Json(new { success = true, message = "Game deleted successfully!" });
+        }
+
+
 
     }
 

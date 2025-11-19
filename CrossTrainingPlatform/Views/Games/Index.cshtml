@@ -34,6 +34,22 @@
 
 
 
+<div class="modal fade" id="deleteGameModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog" style="width:40rem">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contentDeleteGame">
+                <!-- Partial view incarcat prin AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
 <h2 class="games-title">Available Games</h2>
 
 <div class="games-grid">
@@ -352,6 +368,68 @@
             }
         }
 
+
+
+        function loadDeleteGame(id) {
+            fetch('@Url.Action("Delete", "Games")/' + id)
+                .then(response => response.text())
+                .then(html => {
+                    const container = document.getElementById('contentDeleteGame');
+                    if (!container) {
+                        console.error('Container delete nu exista!');
+                        return;
+                    }
+
+                    container.innerHTML = html;
+
+                    const modalEl = document.getElementById('deleteGameModal');
+                    if (!modalEl) {
+                        console.error('Modal delete nu exista!');
+                        return;
+                    }
+
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                })
+                .catch(err => console.error(err));
+        }
+
+
+        async function deleteGame() {
+            const gameId = document.getElementById('deleteGameId').value;
+
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : '';
+
+            const data = new URLSearchParams();
+            data.append('GameId', gameId);
+
+            const response = await fetch('/Games/PostDelete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: data.toString()
+            });
+
+            const text = await response.text();
+            let result;
+
+            try {
+                result = JSON.parse(text);
+            } catch {
+                console.error('Raspuns invalid:', text);
+                return;
+            }
+
+            if (result.success) {
+                sessionStorage.setItem('showToastGameDeleted', 'true');
+                location.reload();
+            } else {
+                alert(result.message || "Eroare la stergere");
+            }
+        }
 
 
         window.onload = function() {
