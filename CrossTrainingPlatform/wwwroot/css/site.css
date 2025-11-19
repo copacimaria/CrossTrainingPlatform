@@ -527,3 +527,35 @@ body {
     .btn-change-password:hover {
         opacity: 0.8;
     }
+
+
+.form-container {
+    width: 350px;
+    margin: 50px auto;
+    padding: 25px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 10px;
+}
+
+
+input[type="password"],
+input[type="text"],
+input[type="email"],
+select {
+    color: white !important;
+    background-color: #222 !important;
+    border: 1px solid #555 !important;
+}
+
+input::placeholder {
+    color: #bbb !important;
+}

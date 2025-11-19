@@ -62,5 +62,53 @@ namespace CrossTrainingPlatform.Controllers
             return View(model);
         }
 
+        [HttpGet]
+        public IActionResult ChangePassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ChangePassword(ChangePasswordVM model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login", "UserAuth");
+
+            // luam userul
+            string userJson = await _supabase.GetAsync($"AppUser?UserId=eq.{userId}");
+            var list = JsonConvert.DeserializeObject<List<AppUser>>(userJson);
+            var user = list.FirstOrDefault();
+
+            if (user == null)
+            {
+                ModelState.AddModelError("", "User not found");
+                return View(model);
+            }
+
+            // verific parola veche
+            if (user.AccPassword != model.OldPassword)
+            {
+                ModelState.AddModelError("", "Parola veche este incorecta");
+                return View(model);
+            }
+
+            // actualizam parola in Supabase
+            var updateData = new
+            {
+                AccPassword = model.NewPassword
+            };
+
+            await _supabase.PatchAsync($"AppUser?UserId=eq.{userId}", updateData);
+
+            ViewBag.Success = "Parola a fost schimbata";
+
+            return View();
+        }
+
+
     }
 }
