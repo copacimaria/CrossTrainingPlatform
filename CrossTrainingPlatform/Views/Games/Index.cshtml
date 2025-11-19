@@ -79,7 +79,10 @@
     <!-- CARD ADD NEW GAME -->
     <div class="game-card add-game-card" onclick="loadCreateGame()"
          data-bs-toggle="modal"
-         data-bs-target="#createGameModal">
+         data-bs-target="#createGameModal"
+         style="display: flex;
+                justify-content: center; 
+                align-items: center; margin-top:2.5rem">
         <div class="add-game-inner">
             <i class="bi bi-plus-lg"></i>
         </div>
@@ -89,6 +92,19 @@
 
 @section Scripts {
     <script>
+
+         //daca raname backdropul din modal
+        document.addEventListener('hidden.bs.modal', function (event) {
+            // elimină backdrop-ul dacă mai rămâne
+            document.querySelectorAll('.modal-backdrop').forEach(function (el) {
+                el.remove();
+            });
+            // elimină clasa modal-open din body
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('padding-right');
+        });
+
+
         // flip card
         document.querySelectorAll('.flip-card').forEach(card => {
             const suitableEl = card.querySelector('.suitable');

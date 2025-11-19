@@ -435,8 +435,6 @@ body {
     position: absolute;
     right: 10px;
     top: 5%;
-    background: rgba(255,255,255,0.15); /* fundal semi-transparent */
-    border: 2px solid #4aa3ff;
     backdrop-filter: blur(10px);
     border-radius: 50%;
     width: 40px; /* cerc mai mare */
@@ -732,3 +730,119 @@ input::placeholder {
     color: #4da6ff;
 }
 
+/* Fundal și animație pentru modal */
+.modal.fade .modal-dialog {
+    transform: translateY(-50px);
+    transition: transform 0.3s ease-out;
+}
+
+.modal.show .modal-dialog {
+    transform: translateY(0);
+}
+
+/* Dialogul propriu-zis */
+.modal-dialog {
+    max-width: 40rem; /* exact cum ai setat inline */
+    margin: 1.75rem auto;
+}
+
+/* Conținut modal */
+.modal-content {
+    background-color: rgba(10, 25, 50, 0.95); /* fundal tematic */
+    border-radius: 1rem;
+    border: 2px solid #4da6ff; /* accentul tematic albastru */
+    box-shadow: 0 0 20px rgba(77, 166, 255, 0.4);
+    color: #ffffff; /* text alb */
+}
+
+/* Header */
+.modal-header {
+    border-bottom: 1px solid rgba(77, 166, 255, 0.3);
+    padding: 1rem 1.5rem;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #4da6ff;
+}
+
+/* Buton de închidere */
+.btn-close {
+    background: transparent;
+    border: none;
+    width: 1.5rem;
+    height: 1.5rem;
+    position: relative;
+}
+
+    .btn-close::before, .btn-close::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 1.5rem;
+        height: 2px;
+        background-color: #ffffff;
+        transform-origin: center;
+    }
+
+    .btn-close::before {
+        transform: translate(-50%, -50%) rotate(45deg);
+    }
+
+    .btn-close::after {
+        transform: translate(-50%, -50%) rotate(-45deg);
+    }
+
+/* Corpul modalului */
+.modal-body {
+    padding: 1.5rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #e0e0e0;
+}
+
+/* Optional: efect hover sau focus */
+.modal-content:hover {
+    box-shadow: 0 0 25px rgba(77, 166, 255, 0.6);
+}
+
+
+
+
+/* Grup formular modal */
+.modal-form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem;
+}
+
+    /* Label */
+    .modal-form-group label {
+        color: #4da6ff; /* accent tematic */
+        font-size: 1.25rem; /* 25px aproximativ */
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Textarea */
+    .modal-form-group textarea {
+        background-color: #222 !important;
+        border: 2px solid #4da6ff; /* bordură albastră */
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        color: #ffffff; /* text alb */
+        font-size: 1rem;
+        line-height: 1.4;
+        transition: border 0.3s, box-shadow 0.3s;
+        resize: none;
+        outline: none;
+    }
+
+        /* Focus pe textarea */
+        .modal-form-group textarea:focus {
+            border-color: #80c1ff;
+            box-shadow: 0 0 10px rgba(77, 166, 255, 0.5);
+            background-color: rgba(10, 25, 50, 1);
+        }
