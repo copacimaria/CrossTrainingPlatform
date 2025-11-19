@@ -4,6 +4,7 @@ using CrossTrainingPlatform.Models.UserManagementModels;
 using CrossTrainingPlatform.Models.ViewModels;
 using CrossTrainingPlatform.Services.DatabaseServices;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -116,10 +117,58 @@ namespace CrossTrainingPlatform.Controllers
         }
 
 
+
+        [HttpGet]
+        public async Task<IActionResult> Create()
+        {
+            string domainJson = await _supabase.GetAsync("Domain?IsActive=eq.true&select=*");
+            var domains = JsonConvert.DeserializeObject<List<Domain>>(domainJson);
+
+            ViewBag.Domains = new SelectList(domains, "DomainId", "DomainName");
+
+            return PartialView("_CreateGame", new Game());
+        }
+
+
+        // POST: Games/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(Game game)
+        {
+            if (!ModelState.IsValid)
+            {
+                string domainJson = await _supabase.GetAsync("Domain?IsActive=eq.true&select=*");
+                var domains = JsonConvert.DeserializeObject<List<Domain>>(domainJson);
+                ViewBag.Domains = new SelectList(domains, "DomainId", "DomainName");
+                return PartialView("_CreateGame", game);
+            }
+
+            game.CreatedAt = DateTime.Now;
+
+            GameDTO gameDto = new GameDTO
+            {
+                GameName = game.GameName,
+                IsActive = game.IsActive,
+                CreatedAt = game.CreatedAt,
+                Description = game.Description,
+                DownloadLink = game.DownloadLink,
+                DomainId = game.DomainId
+            };
+
+            var result = await _supabase.PostAsync("Game", gameDto);
+
+            return Json(new { success = true, message = "Game created successfully!" });
+        }
+
     }
 
 
-}
+
+
+} 
+
+
+
 
 
 

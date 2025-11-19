@@ -94,16 +94,7 @@ namespace CrossTrainingPlatform.Controllers
             return RedirectToAction("Index");
         }
 
-        //public async Task<IActionResult> SelectDomain()
-        //{
-        //    string response = await _supabase.GetAsync("Domain?IsActive=eq.true&select=*");
-        //    var domains = JsonSerializer.Deserialize<List<Domain>>(response);
-
-        //    ViewBag.DomainList = domains;
-
-        //    return View();
-        //}
-
+     
         public async Task<IActionResult> SelectDomain(int userId)
         {
             string response = await _supabase.GetAsync("Domain?IsActive=eq.true&select=*");

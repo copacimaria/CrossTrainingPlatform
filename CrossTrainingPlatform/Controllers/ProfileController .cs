@@ -135,7 +135,7 @@ namespace CrossTrainingPlatform.Controllers
                 ? user.DomainList[0]
                 : 0;
 
-            string domainJson = await _supabase.GetAsync("Domain");
+            string domainJson = await _supabase.GetAsync("Domain?IsActive=eq.true&select=*");
             var domains = JsonConvert.DeserializeObject<List<Domain>>(domainJson);
 
             var vm = new ChangeDomainVM

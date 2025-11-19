@@ -4,116 +4,203 @@
     ViewData["Title"] = "Games";
 }
 
-<h2 class="games-title">Available Games</h2>
+<!-- Modale -->
+<div class="modal fade" id="createGameModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog" style="width:40rem">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Creare joc:</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contentAddGame"></div>
+        </div>
+    </div>
+</div>
 
+<h2 class="games-title">Available Games</h2>
 
 <div class="games-grid">
 
     @foreach (var game in Model.AllGames)
     {
-        if (game.IsActive == true)
+        if (game.IsActive)
         {
-
             bool isInSelected = Model.GamesForSelectedDomain
             .Any(g => g.GameId == game.GameId);
 
             <div class="game-card flip-card" data-expanded="false">
-
                 <div class="flip-card-inner">
 
-                        <!-- FRONT -->
-                        <div class="flip-card-front">
+                    <!-- FRONT -->
+                    <div class="flip-card-front">
+                        @if (!string.IsNullOrEmpty(game.DownloadLink))
+                        {
+                            <a href="@game.DownloadLink" target="_blank" class="download-btn">
+                                <i class="bi bi-download"></i>
+                            </a>
+                        }
 
-                            <!-- DOWNLOAD BUTTON -->
-                            @if (!string.IsNullOrEmpty(game.DownloadLink))
+                        <div class="game-name">@game.GameName</div>
+
+                        <div class="game-body">
+                            @if (game.Domain != null)
                             {
-                                <a href="@game.DownloadLink" target="_blank" class="download-btn">
-                                    <i class="bi bi-download"></i>
-                                </a>
+                                <p><strong>Domain:</strong> @game.Domain.DomainName</p>
                             }
-
-                            <div class="game-name">@game.GameName</div>
-
-                    <div class="game-body">
-
-                                @if (game.Domain != null)
-                                {
-                                    <p><strong>Domain:</strong> @game.Domain.DomainName</p>
-                                }
-                                else
-                                {
-                                    <p><strong>Domain:</strong> Not assigned</p>
-                                }
-                    </div>
-
-
-
-
+                            else
+                            {
+                                <p><strong>Domain:</strong> Not assigned</p>
+                            }
                 </div>
+            </div>
 
+            <!-- BACK -->
+            <div class="flip-card-back">
+                <p class="game-description">
+                    @(string.IsNullOrEmpty(game.Description)
+                                        ? "Fara descriere."
+                                        : (game.Description.Length > 300
+                                        ? game.Description.Substring(0, 300) + "..."
+                                        : game.Description))
+                </p>
+            </div>
+        </div>
 
-
-                    <!-- BACK -->
-                      <div class="flip-card-back">
-                        <p class="game-description">
-                            @(string.IsNullOrEmpty(game.Description)
-                                                ? "Fara descriere."
-                                                : (game.Description.Length > 300
-                                                ? game.Description.Substring(0, 300) + "..."
-                                                : game.Description))
-                        </p>
-                      </div>
-
-
-                </div>
-
-
-              @if (isInSelected)
+        @if (isInSelected)
                 {
                     <div class="suitable">
                         <span>Suitable for your selection ✔</span>
                     </div>
                 }
-
             </div>
-
-
         }
-
-        
     }
+
+    <!-- CARD ADD NEW GAME -->
+    <div class="game-card add-game-card" onclick="loadCreateGame()"
+         data-bs-toggle="modal"
+         data-bs-target="#createGameModal">
+        <div class="add-game-inner">
+            <i class="bi bi-plus-lg"></i>
+        </div>
+    </div>
 
 </div>
 
+@section Scripts {
+    <script>
+        // flip card
+        document.querySelectorAll('.flip-card').forEach(card => {
+            const suitableEl = card.querySelector('.suitable');
 
-<script>
+            card.addEventListener('click', function () {
+                const isExpanded = this.getAttribute('data-expanded') === 'true';
 
-      document.querySelectorAll('.flip-card').forEach(card => {
-        const suitableEl = card.querySelector('.suitable'); // elementul de front
+                this.classList.toggle('flipped');
 
-        card.addEventListener('click', function () {
-           
-            this.classList.toggle('flipped');
-
-            const isExpanded = this.getAttribute('data-expanded') === 'true';
-
-            if (isExpanded) {
-                this.style.transform = 'scale(1)';
-                this.style.zIndex = '1';
-                this.setAttribute('data-expanded', 'false');
-
-                if (suitableEl) suitableEl.style.display = 'block'; 
-            } else {
-                this.style.transform = 'scale(1.6)';
-                this.style.zIndex = '1000'; 
-                this.setAttribute('data-expanded', 'true');
-
-                if (suitableEl) suitableEl.style.display = 'none'; 
-            }
+                if (isExpanded) {
+                    this.style.transform = 'scale(1)';
+                    this.style.zIndex = '1';
+                    this.setAttribute('data-expanded', 'false');
+                    if (suitableEl) suitableEl.style.display = 'block';
+                } else {
+                    this.style.transform = 'scale(1.6)';
+                    this.style.zIndex = '1000';
+                    this.setAttribute('data-expanded', 'true');
+                    if (suitableEl) suitableEl.style.display = 'none';
+                }
+            });
         });
-    });
+
+        // load modal content
+        function loadCreateGame() {
+            fetch('@Url.Action("Create", "Games")')
+                .then(response => response.text())
+                .then(html => {
+                    const container = document.getElementById('contentAddGame'); // corectat numele containerului
+                    if (!container) {
+                        console.error('Container modal nu exista!');
+                        return;
+                    }
+
+                    container.innerHTML = html;
+
+                    // Initializare modal
+                    const modalEl = document.getElementById('createGameModal');
+                    if (!modalEl) {
+                        console.error('Modal element nu exista!');
+                        return;
+                    }
+
+                    const modal = new bootstrap.Modal(modalEl, { backdrop: true });
+                    modal.show();
+
+                    // JS pentru expand la text box-uri
+                    const textBoxes = container.querySelectorAll('textarea, input[type="text"]');
+                    textBoxes.forEach(tb => {
+                        tb.addEventListener('focus', () => {
+                            tb.style.height = 'auto';
+                            tb.style.height = tb.scrollHeight + 'px';
+                        });
+                        tb.addEventListener('input', () => {
+                            tb.style.height = 'auto';
+                            tb.style.height = tb.scrollHeight + 'px';
+                        });
+                    });
+
+                    // optional: poti rula si alte JS-uri specifice view-ului incarcat
+                    if (typeof afterLoadCreateGame === "function") {
+                        afterLoadCreateGame();
+                    }
+                })
+                .catch(err => console.error(err));
+        }
 
 
-</script>
+        // submit game
+        async function createGame() {
+            const gameName = document.getElementById('gameNameCreate').value.trim();
+            const domainId = document.getElementById('domainCreate').value;
+            const downloadLink = document.getElementById('linkCreate').value.trim();
+            const description = document.getElementById('descriptionCreate').value.trim();
 
+            if (!gameName || !domainId || !description) {
+                alert('Completati toate campurile obligatorii!');
+                return;
+            }
 
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : '';
+
+            const data = new URLSearchParams();
+            data.append('GameName', gameName);
+            data.append('DomainId', domainId);
+            data.append('DownloadLink', downloadLink);
+            data.append('Description', description);
+
+            const response = await fetch('/Games/Create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: data.toString()
+            });
+
+            const text = await response.text();
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch {
+                console.error('Raspunsul nu este JSON:', text);
+                return;
+            }
+
+            if (result.success) {
+                location.reload();
+            } else {
+                alert(result.errors ? result.errors.join("\n") : 'Eroare necunoscuta');
+            }
+        }
+    </script>
+}

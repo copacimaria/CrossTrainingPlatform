@@ -706,3 +706,29 @@ input::placeholder {
     -webkit-text-fill-color: transparent;
     margin-top: 50px; /* poziționează titlul mai jos pe pagină */
 }
+
+
+.add-game-card {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+    border: 4px solid #4da6ff; 
+    cursor: pointer;
+    transition: transform 0.3s, background 0.3s, box-shadow 0.3s;
+    box-shadow: 0 0 15px rgba(77, 166, 255, 0.5);
+}
+
+    .add-game-card:hover {
+        transform: scale(1.1);
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+.add-game-inner {
+    font-size: 3rem;
+    color: #4da6ff;
+}
+
