@@ -7,6 +7,9 @@ namespace CrossTrainingPlatform.Models
     {
         [Key]
         public int GameId { get; set; }
+
+
+        [MaxLength(19, ErrorMessage = "Numele jocului nu poate depasi 19 caractere.")]
         public string GameName { get; set; }
         public bool IsActive { get; set; } = true;
         public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
