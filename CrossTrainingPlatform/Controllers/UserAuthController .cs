@@ -80,7 +80,7 @@ namespace CrossTrainingPlatform.Controllers
 
             if (users == null || users.Count == 0)
             {
-                ModelState.AddModelError("", "Invalid email or password");
+                ModelState.AddModelError("", "Invalid email or password!");
                 return View(model);
             }
 

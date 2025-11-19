@@ -4,6 +4,16 @@
     <div class="login-container">
         <h2>Login</h2>
 
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div style="color:red; margin-bottom:10px;">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@error.ErrorMessage</div>
+                }
+            </div>
+        }
+
         <form method="post">
             <div class="form-group">
                 <label>Email</label>
@@ -26,3 +36,7 @@
         </form>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
