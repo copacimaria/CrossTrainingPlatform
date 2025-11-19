@@ -1,0 +1,35 @@
+﻿@model CrossTrainingPlatform.Models.ViewModels.ChangeDomainVM
+
+<div class="page-wrapper">
+    <div class="login-container" style="max-width:400px;">
+        <h2>Change Domain</h2>
+
+        @if (TempData["Success"] != null)
+        {
+            <div style="color:lime; margin-bottom:10px;">
+                @TempData["Success"]
+            </div>
+        }
+
+        <form method="post">
+
+            <div class="form-group">
+                <label>Select Domain</label>
+                <select asp-for="DomainId" class="form-control">
+                    @foreach (var d in Model.Domains)
+                    {
+                        <option value="@d.DomainId">@d.DomainName</option>
+                    }
+                </select>
+                <span asp-validation-for="DomainId" style="color:red;"></span>
+            </div>
+
+            <button type="submit" class="login-btn">Save</button>
+
+            <p class="login-link">
+                Inapoi la profil?
+                <a href="/Profile/Index">Profil</a>
+            </p>
+        </form>
+    </div>
+</div>

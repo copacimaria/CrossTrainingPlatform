@@ -117,5 +117,62 @@ namespace CrossTrainingPlatform.Controllers
         }
 
 
+        [HttpGet]
+        public async Task<IActionResult> ChangeDomain()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login", "UserAuth");
+
+            string userJson = await _supabase.GetAsync($"AppUser?UserId=eq.{userId}");
+            var list = JsonConvert.DeserializeObject<List<AppUser>>(userJson);
+            var user = list.FirstOrDefault();
+
+            if (user == null)
+                return NotFound("User not found");
+
+            int currentDomainId = user.DomainList != null && user.DomainList.Count > 0
+                ? user.DomainList[0]
+                : 0;
+
+            string domainJson = await _supabase.GetAsync("Domain");
+            var domains = JsonConvert.DeserializeObject<List<Domain>>(domainJson);
+
+            var vm = new ChangeDomainVM
+            {
+                DomainId = currentDomainId,
+                Domains = domains
+            };
+
+            return View(vm);
+        }
+
+
+        [HttpPost]
+        public async Task<IActionResult> ChangeDomain(ChangeDomainVM model)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login", "UserAuth");
+
+            if (model.DomainId == 0)
+            {
+                ModelState.AddModelError("", "Selecteaza un domeniu.");
+                return await ChangeDomain();
+            }
+
+            var updateData = new
+            {
+                DomainList = new List<int> { model.DomainId }
+            };
+
+            await _supabase.PatchAsync($"AppUser?UserId=eq.{userId}", updateData);
+
+            TempData["Success"] = "Domeniul a fost schimbat.";
+            return RedirectToAction("Index");
+        }
+
+
+
     }
 }
