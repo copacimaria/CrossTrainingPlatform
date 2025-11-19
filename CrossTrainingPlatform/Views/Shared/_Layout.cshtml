@@ -57,7 +57,20 @@
             <li>
                 <a href="@Url.Action("DisplayGamesBasedOnDomain", "Games")">Games</a>
             </li>
-            <li><a href="#">Admin Settings</a></li>
+
+            <li class="has-submenu">
+                <a href="#" id="adminToggle" class="admin-toggle">
+                    Admin Settings <span class="arrow">&#9662;</span>
+                </a>
+
+                <ul id="adminSubmenu" class="submenu">
+                    <li><a href="/Admin/AppRoles">AppRoles</a></li>
+                    <li><a href="/Admin/AppClaims">AppClaims</a></li>
+                    <li><a href="/Admin/AppUsers">AppUsers</a></li>
+                    <li><a href="/Admin/Domains">Domains</a></li>
+                </ul>
+            </li>
+
         </ul>
     </div>
 
@@ -85,6 +98,18 @@
         closeSidebar.addEventListener('click', () => {
             sidebar.classList.remove('active'); // închide sidebar
         });
+
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const toggle = document.getElementById("adminToggle");
+            const submenu = document.getElementById("adminSubmenu");
+
+            toggle.addEventListener("click", function(e) {
+                e.preventDefault();
+                submenu.classList.toggle("open");
+            });
+        });
+
     </script>
 
     @await RenderSectionAsync("Scripts", required: false)

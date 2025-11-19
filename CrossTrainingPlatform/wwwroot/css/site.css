@@ -575,3 +575,15 @@ input::placeholder {
         .profile-links a:hover {
             text-decoration: underline;
         }
+
+
+.submenu {
+    display: none;
+    list-style: none;
+    padding-left: 15px;
+    font-size:0.8rem;
+}
+
+    .submenu.open {
+        display: block;
+    }
