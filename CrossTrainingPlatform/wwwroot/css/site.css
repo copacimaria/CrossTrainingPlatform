@@ -858,7 +858,7 @@ input::placeholder {
 }
 
 .edit-link {
-    color: green;
+    color: lightgreen;
     text-decoration: none;
     background: none;
     border: none;
@@ -872,7 +872,7 @@ input::placeholder {
     }
 
 .delete-link {
-    color: red;
+    color: indianred;
     text-decoration: none;
     background: none;
     border: none;
