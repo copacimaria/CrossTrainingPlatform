@@ -528,14 +528,8 @@ body {
         opacity: 0.8;
     }
 
+    
 
-.form-container {
-    width: 350px;
-    margin: 50px auto;
-    padding: 25px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-}
 
 .form-group {
     margin-bottom: 15px;
