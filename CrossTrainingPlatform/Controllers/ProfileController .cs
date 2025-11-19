@@ -89,14 +89,21 @@ namespace CrossTrainingPlatform.Controllers
                 return View(model);
             }
 
-            // verific parola veche
+            // verificare parola veche
             if (user.AccPassword != model.OldPassword)
             {
-                ModelState.AddModelError("", "Parola veche este incorecta");
+                ModelState.AddModelError("OldPassword", "Parola veche este incorecta!");
                 return View(model);
             }
 
-            // actualizam parola in Supabase
+            // verificare parola noua = parola veche
+            if (model.NewPassword == model.OldPassword)
+            {
+                ModelState.AddModelError("NewPassword", "Parola noua nu poate fi identica cu cea veche!");
+                return View(model);
+            }
+
+            // update parola in Supabase
             var updateData = new
             {
                 AccPassword = model.NewPassword
@@ -104,7 +111,7 @@ namespace CrossTrainingPlatform.Controllers
 
             await _supabase.PatchAsync($"AppUser?UserId=eq.{userId}", updateData);
 
-            ViewBag.Success = "Parola a fost schimbata";
+            ViewBag.Success = "Parola a fost schimbata cu succes!";
 
             return View();
         }
