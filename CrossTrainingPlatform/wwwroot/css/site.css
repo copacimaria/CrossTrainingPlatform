@@ -587,3 +587,104 @@ input::placeholder {
     .submenu.open {
         display: block;
     }
+
+
+/* GRID */
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* 3 pe rand, responsive */
+    gap: 30px; /* spatiu intre carduri */
+    padding: 30px;
+    justify-items: center; /* centreaza cardurile */
+}
+
+/* CARD BASE + GLOW */
+.flip-card {
+    position: relative;
+    background: #222;
+    border-radius: 10px;
+    width: 100%; /* ocupa tot spatiul din coloana */
+    max-width: 350px; /* limiteaza latimea ca sa nu dea scroll */
+    height: 150px;
+    perspective: 1000px;
+    transition: transform 0.4s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+    z-index: 1;
+}
+
+    .flip-card:hover {
+        box-shadow: 0 0 25px rgba(0, 255, 255, 0.8);
+    }
+
+/* FLIP INNER */
+.flip-card-inner {
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+    position: relative;
+}
+
+.flipped .flip-card-inner {
+    transform: rotateY(180deg);
+    z-index: 10;
+}
+
+/* FRONT & BACK */
+.flip-card-front,
+.flip-card-back {
+    background: #333;
+    color: white;
+    border-radius: 10px;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    backface-visibility: hidden;
+    overflow: hidden;
+}
+
+.flip-card-back {
+    transform: rotateY(180deg);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    text-align: left;
+    overflow-y: auto;
+    box-sizing: border-box;
+    word-wrap: break-word;
+}
+
+.game-description {
+    margin: 0;
+    line-height: 1.4;
+    font-size: 9px;
+    text-align: left;
+}
+
+/* DOWNLOAD ICON */
+.download-btn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    color: white;
+    font-size: 1.4rem;
+    text-decoration: none;
+    z-index: 15;
+}
+
+    .download-btn:hover {
+        color: #0d6efd;
+    }
+
+.game-name {
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+}
+
+.suitable {
+    margin-top: 10px;
+    color: #4cff4c;
+    font-weight: bold;
+}
