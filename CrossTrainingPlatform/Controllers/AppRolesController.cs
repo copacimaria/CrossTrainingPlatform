@@ -77,7 +77,7 @@ namespace KD_Pallet.Controllers
             if (string.IsNullOrWhiteSpace(appRole.RoleName))
                 return Json(new { success = false, errors = new[] { "Rolul trebuie sa aibe un nume!" } });
 
-            await _supabase.PostAsync("AppRole", new { RoleName = appRole.RoleName, IsActive = true });
+            await _supabase.PostAsync("AppRole", new { RoleName = appRole.RoleName});
             return Json(new { success = true });
         }
 

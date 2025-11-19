@@ -45,9 +45,9 @@
 </div>
 
 <div class="d-flex justify-content-between align-items-center" style="padding:0.5rem; margin-right:1rem;">
-    <h1 class="mb-0">Roluri</h1>
-    @if  (User.HasClaim(c => c.Value == "CreateRoles"))
-    {
+    <h1 class="mb-0" style="color:white;">Roluri</h1>
+    @* @if  (User.HasClaim(c => c.Value == "CreateRoles"))
+    { *@
         <button onclick="loadCreateRole()"
                 data-bs-toggle="modal"
                 data-bs-target="#createRoleModal"
@@ -55,34 +55,34 @@
             <i class="bi bi-plus-circle me-2"></i>
             Creeaza un rol nou
             </button>
-    }
+    @* } *@
 </div>
 
 
 
-<div class="col">
+<div class="col" style="color:white;">
 
     <!-- Filtre -->
     <div class="d-flex mb-3">
         <form method="get" class="d-flex gap-3" style="margin-left:0.5rem; margin-right:1rem">
             <div>
-                <label for="RoleSearch" class="form-label mb-0" style="font-size: 1rem; font-weight:bold">
+                <label for="RoleSearch" class="form-label mb-0" style="font-size: 1rem; font-weight:bold; color:white;">
                     Cauta rolul:
                 </label>
                 <input type="text" id="RoleSearch" name="RoleSearch" placeholder="Cauta dupa nume"
-                       class="form-control form-control-sm" style="width:12.5rem"
+                       class="form-control form-control-sm" style="width:12.5rem; color:black;"
                        value="@(!string.IsNullOrEmpty(ViewBag.SelectedRole) ? ViewBag.SelectedRole : "")">
             </div>
-            <button type="button" class="btn btn-success mt-4" style="font-weight:bold" onclick="searchRole()">
+            <button type="button" class="btn btn-success mt-4" style="font-weight:bold">
                 <i class="bi bi-search"></i> Filtreaza
             </button>
-            <button type="button" class="btn btn-danger mt-4" style="font-weight:bold" onclick="resetFilters()">
+            <button type="button" class="btn btn-danger mt-4" style="font-weight:bold">
                 <i class="bi bi-x-circle"></i> Reseteaza
             </button>
         </form>
     </div>
 
-    <table class="table table-hover">
+    <table class="table table-hover" style="color:white;">
         <thead>
             <tr>
                 <th style="font-weight:bold">Nume rol</th>
@@ -99,30 +99,21 @@
                         <td>@Html.DisplayFor(m => item.RoleName)</td>
 
                         <td>
-                           @*  @if   ( User.HasClaim(c => c.Value == "AddClaim") || User.HasClaim(c => c.Value == "RemoveClaim"))
-                            { *@
                             <a asp-controller="AppRoles" asp-action="Details" asp-route-id="@item.RoleId"
                                class="btn btn-info btn-sm" style="color:red; font-weight:bold">
                                 <i class="bi bi-plus-circle" style="font-weight:bold"></i> Drepturi
                             </a>
-                           @*  } *@
                         </td>
 
                         <td>
-                            @* @if (User.HasClaim(c => c.Value == "EditRoles"))
-                            { *@
-                                <button data-bs-toggle="modal" data-bs-target="#editRoleModal"
-                                        onclick="loadEditRole(@item.RoleId)" class="edit-link">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                            @* } *@
-                            @* @if (User.HasClaim(c => c.Value == "DeleteRoles"))
-                            { *@
-                                <button data-bs-toggle="modal" data-bs-target="#deleteRoleModal"
-                                        onclick="loadDeleteRole(@item.RoleId)" class="delete-link">
-                                    <i class="bi bi-trash3"></i>
-                                </button>
-                            @* } *@
+                            <button data-bs-toggle="modal" data-bs-target="#editRoleModal"
+                                    onclick="loadEditRole(@item.RoleId)" class="edit-link">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <button data-bs-toggle="modal" data-bs-target="#deleteRoleModal"
+                                    onclick="loadDeleteRole(@item.RoleId)" class="delete-link">
+                                <i class="bi bi-trash3"></i>
+                            </button>
                         </td>
 
                     </tr>
@@ -142,6 +133,7 @@
                 )
     </div>
 </div>
+
 
 <script>
     function resetFilters() {
