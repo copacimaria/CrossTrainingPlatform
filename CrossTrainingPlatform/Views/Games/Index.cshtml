@@ -213,10 +213,53 @@
             }
 
             if (result.success) {
+                sessionStorage.setItem('showToastGameAdded', 'true');
                 location.reload();
             } else {
                 alert(result.errors ? result.errors.join("\n") : 'Eroare necunoscuta');
             }
         }
+
+
+        window.onload = function() {
+            if(sessionStorage.getItem('showToastGameAdded') === 'true') {
+                Toastify({
+                    text: "The game was added!",
+                    duration: 3000,
+                    close: true,
+                    gravity: "bottom",
+                    position: "center",
+                    style: { background: "green" },
+                }).showToast();
+                sessionStorage.removeItem('showToastGameAdded');
+            }
+
+            if(sessionStorage.getItem('showToastGameDeleted') === 'true') {
+                Toastify({
+                    text: "The game was removed!",
+                    duration: 3000,
+                    close: true,
+                    gravity: "bottom",
+                    position: "center",
+                    style: { background: "red" },
+                }).showToast();
+                sessionStorage.removeItem('showToastGameDeleted');
+            }
+
+
+            if(sessionStorage.getItem('showToastGameEdited') === 'true') {
+                Toastify({
+                    text: "The game was edited!",
+                    duration: 3000,
+                    close: true,
+                    gravity: "bottom",
+                    position: "center",
+                    style: { background: "red" },
+                }).showToast();
+                sessionStorage.removeItem('showToastGameEdited');
+            }
+        }
+
+
     </script>
 }
