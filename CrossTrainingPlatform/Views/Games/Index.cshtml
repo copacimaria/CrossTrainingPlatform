@@ -55,12 +55,13 @@
                         <!-- ACTION BUTTONS -->
                         <div class="card-actions">
                             <button data-bs-toggle="modal" data-bs-target="#editGameModal"
-                                    onclick="loadEditgame(@game.GameId)" class="edit-link">
+                                    onclick="event.stopPropagation(); loadEditgame(@game.GameId)"
+                                    class="edit-link">
                                 <i class="bi bi-pencil-square"></i>
                             </button>
 
                             <button data-bs-toggle="modal" data-bs-target="#deleteGameModal"
-                                    onclick="loadDeleteGame(@game.GameId)"
+                                    onclick="event.stopPropagation(); loadDeleteGame(@game.GameId)"
                                     class="delete-link">
                                 <i class="bi bi-trash3"></i>
                             </button>
