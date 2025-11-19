@@ -39,10 +39,25 @@ namespace CrossTrainingPlatform.Controllers
                 RoleId = 1
             };
 
-            var result = await _supabase.PostAsync("AppUser", newUser);
+            // Creează utilizatorul în Supabase
+            await _supabase.PostAsync("AppUser", newUser);
 
-            return RedirectToAction("Login");
+            // Preia utilizatorul după email
+            var getResult = await _supabase.GetAsync($"AppUser?Email=eq.{model.Email}");
+            var userList = JsonSerializer.Deserialize<List<AppUser>>(getResult);
+            var createdUser = userList?.FirstOrDefault();
+
+            if (createdUser == null)
+            {
+                ModelState.AddModelError("", "Nu s-a putut prelua utilizatorul creat.");
+                return View(model);
+            }
+
+            // Redirect către SelectDomain cu userId
+            return RedirectToAction("SelectDomain", "Domain", new { userId = createdUser.UserId });
         }
+
+
 
         // --------------------- LOGIN ---------------------
         [HttpGet]
@@ -86,7 +101,8 @@ namespace CrossTrainingPlatform.Controllers
                 HttpContext.Session.SetString("DomainName", user.DomainList.First().DomainName);
 
             // redirect
-            return RedirectToAction("SelectDomain", "Domain");
+            //return RedirectToAction("SelectDomain", "Domain");
+            return RedirectToAction("DisplayGamesBasedOnDomain", "Games");
         }
 
     }

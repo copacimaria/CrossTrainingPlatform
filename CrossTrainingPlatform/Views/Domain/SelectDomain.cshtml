@@ -4,11 +4,17 @@
     <div class="domain-container">
         <h2>Select Domain</h2>
 
-        <form method="post" asp-action="DisplayGamesBasedOnDomain" asp-controller="Games">
+        <form method="post" asp-action="SaveUserDomain" asp-controller="Domain">
+            <input type="hidden" name="userId" value="@ViewBag.UserId" />
+
             <div class="form-group">
                 <label>Select Domain:</label>
-                <select asp-for="DomainId" asp-items="@(new SelectList(ViewBag.DomainList, "DomainId", "DomainName"))">
+                <select name="domainId">
                     <option value="">-- Select Domain --</option>
+                    @foreach (var domain in ViewBag.DomainList)
+                    {
+                        <option value="@domain.DomainId">@domain.DomainName</option>
+                    }
                 </select>
             </div>
 
@@ -16,6 +22,7 @@
         </form>
     </div>
 </div>
+
 
 
 

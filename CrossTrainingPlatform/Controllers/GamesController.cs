@@ -49,10 +49,27 @@ namespace CrossTrainingPlatform.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> DisplayGamesBasedOnDomain(int? DomainId)
+        public async Task<IActionResult> DisplayGamesBasedOnDomain()
         {
-            string endpointGameForSelectedDomain = DomainId.HasValue
-                ? $"Game?DomainId=eq.{DomainId.Value}"
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login", "UserAuth");
+
+            // luam domeniul din baza de date, asociat userId
+            string endpoint = $"UserDomains?UserId=eq.{userId}&select=DomainId";
+            string response = await _supabase.GetAsync(endpoint);
+            var userDomains = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Domain>>(response);
+
+            if (userDomains == null || userDomains.Count == 0)
+            {
+                // user nu are domenii
+                return BadRequest("No domains assigned to user");
+            }
+
+            int DomainId = userDomains.First().DomainId;
+
+            string endpointGameForSelectedDomain = (DomainId > 0)
+                ? $"Game?DomainId=eq.{DomainId}"
                 : "Game";
 
             try

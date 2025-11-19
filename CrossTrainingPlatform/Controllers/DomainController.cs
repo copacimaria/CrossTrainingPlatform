@@ -94,15 +94,48 @@ namespace CrossTrainingPlatform.Controllers
             return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> SelectDomain()
+        //public async Task<IActionResult> SelectDomain()
+        //{
+        //    string response = await _supabase.GetAsync("Domain?IsActive=eq.true&select=*");
+        //    var domains = JsonSerializer.Deserialize<List<Domain>>(response);
+
+        //    ViewBag.DomainList = domains;
+
+        //    return View();
+        //}
+
+        public async Task<IActionResult> SelectDomain(int userId)
         {
             string response = await _supabase.GetAsync("Domain?IsActive=eq.true&select=*");
             var domains = JsonSerializer.Deserialize<List<Domain>>(response);
 
             ViewBag.DomainList = domains;
+            ViewBag.UserId = userId;
 
             return View();
         }
+
+
+        [HttpPost]
+        public async Task<IActionResult> SaveUserDomain(int userId, int domainId)
+        {
+            if (domainId == 0)
+                return RedirectToAction("SelectDomain", new { userId }); // daca nu a ales nimic
+
+            // Patch in Supabase pentru user
+            
+              var updateData = new Dictionary<string, object>
+              {
+                  { "DomainList", new int[] { domainId } }
+              };
+
+            await _supabase.PatchAsync($"AppUser?UserId=eq.{userId}", updateData);
+
+
+            // Redirect catre login
+            return RedirectToAction("Login", "UserAuth");
+        }
+
 
 
     }
