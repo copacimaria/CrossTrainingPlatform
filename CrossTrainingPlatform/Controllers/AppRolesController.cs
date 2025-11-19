@@ -1,4 +1,5 @@
 ﻿using CrossTrainingPlatform.Models.DTOs;
+using CrossTrainingPlatform.Models.Pivots;
 using CrossTrainingPlatform.Models.UserManagementModels;
 using CrossTrainingPlatform.Models.ViewModels;
 using CrossTrainingPlatform.Services.DatabaseServices;
@@ -49,25 +50,37 @@ namespace KD_Pallet.Controllers
         //[Authorize(Roles = "ViewClaim")]
         public async Task<IActionResult> Details(int id)
         {
-            string response = await _supabase.GetAsync($"AppRole?RoleId=eq.{id}");
-            var role = JsonSerializer.Deserialize<List<AppRole>>(response)?.FirstOrDefault();
-            if (role == null) return NotFound();
+            // 1. Preluăm rolul
+            string roleResponse = await _supabase.GetAsync($"AppRole?RoleId=eq.{id}");
+            var role = JsonSerializer.Deserialize<List<AppRole>>(roleResponse)?.FirstOrDefault();
+            if (role == null)
+                return NotFound();
 
-            // Preluare claim-uri asociate
-            string claimsResponse = await _supabase.GetAsync($"AppClaim?select=*,RoleList(RoleId)&RoleList.RoleId=eq.{id}");
-            var claims = JsonSerializer.Deserialize<List<AppClaim>>(claimsResponse) ?? new List<AppClaim>();
+            // 2. Preluăm claim-urile asociate prin tabela pivot
+            // select=*,AppClaim_AppRole!inner(AppClaimId, AppClaim(*))
+            string claimsResponse = await _supabase.GetAsync(
+                $"AppClaim_AppRole?RoleId=eq.{id}&select=AppClaim(*)"
+            );
 
+            // Deserialize doar claim-urile
+            var pivotList = JsonSerializer.Deserialize<List<AppClaimPivot>>(claimsResponse) ?? new List<AppClaimPivot>();
+            var claims = pivotList.Select(p => p.AppClaim).ToList();
+
+            // 3. Construim ViewModel-ul
             AppRolesClaimsViewModel vm = new AppRolesClaimsViewModel
             {
                 Role = role,
-                Claims = claims.ToPagedList(1, claims.Count) // simplu, fara paginare complexa
+                Claims = claims.ToPagedList(1, claims.Count)
             };
 
             return View(vm);
         }
 
+        // Helper class pentru mapping pivot
+      
+
         // ---------------- CREATE ----------------
-       // [Authorize(Roles = "CreateRoles")]
+        // [Authorize(Roles = "CreateRoles")]
         public IActionResult Create()
         {
             return PartialView("_CreateRole");
@@ -133,7 +146,7 @@ namespace KD_Pallet.Controllers
         //[Authorize(Roles = "AddClaim")]
         public async Task<IActionResult> AddClaim(int id)
         {
-            string roleResponse = await _supabase.GetAsync($"AppRole?Id=eq.{id}");
+            string roleResponse = await _supabase.GetAsync($"AppRole?RoleId=eq.{id}");
             var role = JsonSerializer.Deserialize<List<AppRole>>(roleResponse)?.FirstOrDefault();
             if (role == null) return Json(new { success = false, message = "Rolul nu a fost gasit." });
 
@@ -158,6 +171,22 @@ namespace KD_Pallet.Controllers
 
             return PartialView("_addClaimInRole", vm);
         }
+
+
+        [HttpPost]
+        public IActionResult SearchClaim([FromBody] SearchClaimRequest request)
+        {
+            if (string.IsNullOrEmpty(request.SearchTerm))
+                return Json(new { success = false, message = "Search field is empty." });
+
+            var filtered = request.Claims
+                .Where(c => c.ClaimName.Contains(request.SearchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            return Json(new { success = true, data = filtered });
+        }
+
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]

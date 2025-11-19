@@ -32,10 +32,10 @@
 
 <br />
 
-<div class="d-flex justify-content-between align-items-center" style="padding:0.5rem; margin-right:1rem;">
+<div class="d-flex justify-content-between align-items-center" style="color:white; padding:0.5rem; margin-right:1rem;">
     <h1 class="mb-0">Rolul: @Model.Role.RoleName</h1>
-    @if (User.HasClaim(c => c.Value == "AddClaim"))
-    {
+@*     @if (User.HasClaim(c => c.Value == "AddClaim"))
+    { *@
         <button onclick="loadAddClaim('@Model.Role.RoleId')"
                 data-bs-toggle="modal"
                 data-bs-target="#addClaimModal"
@@ -43,11 +43,11 @@
             <i class="bi bi-plus-circle me-2"></i>
             Adauga drepturi in rol
         </button>
-    }
+  @*   } *@
 </div>
 
 
-<div class="col">
+<div class="col" style="color:white;">
 
     <!-- Filtre -->
     <div class="d-flex mb-3 gap-3" style="margin-left:0.5rem;">
@@ -69,7 +69,7 @@
       
     </div>
 
-    <table class="table table-hover">
+    <table class="table table-hover" style="color:white;">
         <thead>
             <tr>
                 <th style="font-weight:bold">Nume drept</th>
@@ -86,12 +86,12 @@
                         <td>@Html.DisplayFor(m => item.ClaimName)</td>
 
                         <td>
-                            @if (User.HasClaim(c => c.Value == "RemoveClaim"))
-                            {
+                            @* @if (User.HasClaim(c => c.Value == "RemoveClaim"))
+                            { *@
                                 <button onclick="loadRemoveClaim('@item.ClaimId', '@Model..Id')" class="delete-link">
                                     <i class="bi bi-dash-circle"></i>
                                 </button>
-                            }
+                    @*         } *@
                         </td>
 
                     </tr>

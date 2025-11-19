@@ -12,5 +12,7 @@ namespace CrossTrainingPlatform.Models.UserManagementModels
 
         
         public List<AppClaim>? ClaimList { get; set; }
+
     }
 }
+
