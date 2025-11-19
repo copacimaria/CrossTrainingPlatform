@@ -1,5 +1,6 @@
 ﻿using CrossTrainingPlatform.Models;
 using CrossTrainingPlatform.Models.DTOs;
+using CrossTrainingPlatform.Models.UserManagementModels;
 using CrossTrainingPlatform.Models.ViewModels;
 using CrossTrainingPlatform.Services.DatabaseServices;
 using Microsoft.AspNetCore.Mvc;
@@ -48,32 +49,34 @@ namespace CrossTrainingPlatform.Controllers
 
 
 
-        [HttpPost]
+        [HttpGet]
         public async Task<IActionResult> DisplayGamesBasedOnDomain()
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null)
                 return RedirectToAction("Login", "UserAuth");
 
-            // luam domeniul din baza de date, asociat userId
-            string endpoint = $"UserDomains?UserId=eq.{userId}&select=DomainId";
-            string response = await _supabase.GetAsync(endpoint);
-            var userDomains = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Domain>>(response);
-
-            if (userDomains == null || userDomains.Count == 0)
-            {
-                // user nu are domenii
-                return BadRequest("No domains assigned to user");
-            }
-
-            int DomainId = userDomains.First().DomainId;
-
-            string endpointGameForSelectedDomain = (DomainId > 0)
-                ? $"Game?DomainId=eq.{DomainId}"
-                : "Game";
-
             try
             {
+                // luam userul (fara joinuri, DomainList vine din JSONB)
+                string endpointUser = $"AppUser?UserId=eq.{userId}&select=*";
+                var responseUser = await _supabase.GetAsync(endpointUser);
+                var users = Newtonsoft.Json.JsonConvert.DeserializeObject<List<AppUser>>(responseUser);
+
+                if (users == null || users.Count == 0)
+                    return BadRequest("User not found");
+
+                var user = users.First();
+
+                // DomainList e lista de int
+                if (user.DomainList == null || user.DomainList.Count == 0)
+                    return BadRequest("User has no domains");
+
+                // luam primul DomainId
+                int domainId = user.DomainList.First();
+
+                // jocurile pentru domeniu
+                string endpointGameForSelectedDomain = $"Game?DomainId=eq.{domainId}";
                 var resultSelectedDomain = await _supabase.GetAsync(endpointGameForSelectedDomain);
                 var resultAll = await _supabase.GetAsync("Game");
 
@@ -99,7 +102,10 @@ namespace CrossTrainingPlatform.Controllers
         }
 
     }
+
+
 }
+
 
 
 

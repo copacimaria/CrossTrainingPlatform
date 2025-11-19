@@ -36,16 +36,15 @@ namespace CrossTrainingPlatform.Controllers
 
             // daca vrei role + domain trebuie sa-ti confirm cum sunt legate in Supabase
             string roleName = user.Role?.RoleName ?? "";
-            string domainName = user.DomainList != null && user.DomainList.Count > 0
-                ? user.DomainList.First().DomainName
-                : "";
+            //string domkainId = user.DomainList != null && user.DomainList.Count > 0
+            //    ? user.DomainList[0];
 
             var model = new ProfileViewModel
             {
                 FullName = $"{user.Name} {user.FamilyName}",
                 Email = user.Email,
                 Role = roleName,
-                Domain = domainName
+                //Domain = domainName
             };
 
             return View(model);

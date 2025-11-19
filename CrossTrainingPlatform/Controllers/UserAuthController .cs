@@ -96,9 +96,6 @@ namespace CrossTrainingPlatform.Controllers
             if (user.Role != null)
                 HttpContext.Session.SetString("RoleName", user.Role.RoleName);
 
-            // daca userul are domenii
-            if (user.DomainList != null && user.DomainList.Count > 0)
-                HttpContext.Session.SetString("DomainName", user.DomainList.First().DomainName);
 
             // redirect
             //return RedirectToAction("SelectDomain", "Domain");

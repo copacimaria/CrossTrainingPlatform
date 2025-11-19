@@ -21,7 +21,7 @@ namespace CrossTrainingPlatform.Models.UserManagementModels
 
 
         public List<Game>? GameList { get; set; }
-        public List<Domain>? DomainList { get; set; }
+        public List<int>? DomainList { get; set; } = new List<int>();
 
 
     }
