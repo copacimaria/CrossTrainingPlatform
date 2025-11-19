@@ -160,10 +160,60 @@ namespace CrossTrainingPlatform.Controllers
             return Json(new { success = true, message = "Game created successfully!" });
         }
 
+
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id)
+        {
+            // luam game-ul din supabase
+            string gameJson = await _supabase.GetAsync($"Game?GameId=eq.{id}&select=*");
+            var gameList = JsonConvert.DeserializeObject<List<Game>>(gameJson);
+            var game = gameList.FirstOrDefault();
+
+            if (game == null)
+                return NotFound();
+
+            // incarcam domeniile
+            string domainJson = await _supabase.GetAsync("Domain?IsActive=eq.true&select=*");
+            var domains = JsonConvert.DeserializeObject<List<Domain>>(domainJson);
+
+            ViewBag.Domains = new SelectList(domains, "DomainId", "DomainName", game.DomainId);
+
+            return PartialView("_EditGame", game);
+        }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, Game game)
+        {
+            if (!ModelState.IsValid)
+            {
+                string domainJson = await _supabase.GetAsync("Domain?IsActive=eq.true&select=*");
+                var domains = JsonConvert.DeserializeObject<List<Domain>>(domainJson);
+
+                ViewBag.Domains = new SelectList(domains, "DomainId", "DomainName", game.DomainId);
+
+                return PartialView("_EditGame", game);
+            }
+
+            // DTO pentru update
+            var gameDto = new
+            {
+                GameName = game.GameName,
+                Description = game.Description,
+                DownloadLink = game.DownloadLink,
+                DomainId = game.DomainId
+            };
+
+            // apel patch supabase
+            var result = await _supabase.PatchAsync($"Game?GameId=eq.{id}", gameDto);
+
+            return Json(new { success = true, message = "Game updated successfully!" });
+        }
+
+
+
     }
-
-
-
 
 } 
 

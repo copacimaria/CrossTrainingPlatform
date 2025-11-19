@@ -17,6 +17,23 @@
     </div>
 </div>
 
+
+<div class="modal fade" id="editGameModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog" style="width:40rem">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editeaza joc:</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contentEditGame">
+                <!-- Partial view incarcat prin AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
 <h2 class="games-title">Available Games</h2>
 
 <div class="games-grid">
@@ -242,6 +259,100 @@
         }
 
 
+
+                // incarcare partial view edit game
+        function loadEditgame(gameId) {
+            fetch(`/Games/Edit/${gameId}`)
+                .then(response => response.text())
+                .then(html => {
+                    const container = document.getElementById('contentEditGame');
+                    if (!container) {
+                        console.error('Container modal nu exista!');
+                        return;
+                    }
+
+                    container.innerHTML = html;
+
+                    // Initializare modal
+                    const modalEl = document.getElementById('editGameModal');
+                    if (!modalEl) {
+                        console.error('Modal element nu exista!');
+                        return;
+                    }
+
+                    const modal = new bootstrap.Modal(modalEl, { backdrop: true });
+                    modal.show();
+
+                    // JS pentru auto-expand la textarea/input
+                    const textBoxes = container.querySelectorAll('textarea, input[type="text"]');
+                    textBoxes.forEach(tb => {
+                        tb.style.height = 'auto';
+                        tb.style.height = tb.scrollHeight + 'px';
+                        tb.addEventListener('focus', () => {
+                            tb.style.height = 'auto';
+                            tb.style.height = tb.scrollHeight + 'px';
+                        });
+                        tb.addEventListener('input', () => {
+                            tb.style.height = 'auto';
+                            tb.style.height = tb.scrollHeight + 'px';
+                        });
+                    });
+                })
+                .catch(err => console.error(err));
+        }
+
+        // submit edit game
+        async function submitEditGame(gameId) {
+            const container = document.getElementById('contentEditGame');
+
+            const gameName = container.querySelector('[name="GameName"]').value.trim();
+            const description = container.querySelector('[name="Description"]').value.trim();
+            const downloadLink = container.querySelector('[name="DownloadLink"]').value.trim();
+            const domainId = document.getElementById('domainEdit').value;
+
+            if (!gameName || !description) {
+                alert('Completati toate campurile obligatorii!');
+                return;
+            }
+
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : '';
+
+            const data = new URLSearchParams();
+            data.append('GameId', gameId);
+            data.append('GameName', gameName);
+            data.append('DomainId', domainId);
+            data.append('Description', description);
+            data.append('DownloadLink', downloadLink);
+
+            const response = await fetch(`/Games/Edit/${gameId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: data.toString()
+            });
+
+            const text = await response.text();
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch {
+                console.error('Raspunsul nu este JSON:', text);
+                return;
+            }
+
+            if (result.success) {
+                sessionStorage.setItem('showToastGameEdited', 'true');
+                location.reload();
+            } else {
+                alert(result.message || 'Eroare necunoscuta');
+            }
+        }
+
+
+
         window.onload = function() {
             if(sessionStorage.getItem('showToastGameAdded') === 'true') {
                 Toastify({
@@ -250,7 +361,7 @@
                     close: true,
                     gravity: "bottom",
                     position: "center",
-                    style: { background: "green" },
+                    style: { background: "grey" },
                 }).showToast();
                 sessionStorage.removeItem('showToastGameAdded');
             }
@@ -275,7 +386,7 @@
                     close: true,
                     gravity: "bottom",
                     position: "center",
-                    style: { background: "red" },
+                    style: { background: "green" },
                 }).showToast();
                 sessionStorage.removeItem('showToastGameEdited');
             }
