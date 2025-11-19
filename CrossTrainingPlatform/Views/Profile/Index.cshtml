@@ -1,0 +1,20 @@
+﻿@model CrossTrainingPlatform.Models.ViewModels.ProfileViewModel
+
+
+<div class="profile-page">
+    <div class="profile-card">
+        <i class="bi bi-person-circle profile-icon"></i>
+
+        <h2 class="profile-name">@Model.FullName</h2>
+        <p class="profile-email">@Model.Email</p>
+
+        <div class="profile-info">
+            <p><strong>Rol:</strong> @Model.Role</p>
+            <p><strong>Domeniu selectat:</strong> @Model.Domain</p>
+        </div>
+
+        <a href="/Profile/ChangePassword" class="btn-change-password">
+            Schimbare parola
+        </a>
+    </div>
+</div>

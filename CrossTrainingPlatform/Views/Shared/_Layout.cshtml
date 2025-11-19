@@ -42,12 +42,12 @@
     <!-- Sidebar -->
     <div id="sidebar" class="sidebar">
         <button id="closeSidebar" class="close-btn">✕</button>
-
         <ul>
-            <li><a href="#">Dashboard</a></li>
-            <li><a href="#">Games</a></li>
-            <li><a href="#">Settings</a></li>
-            <li><a href="#">Profile</a></li>
+            <li><a href="@Url.Action("Index", "Profile")">Profile</a></li>
+            <li>
+                <a href="@Url.Action("DisplayGamesBasedOnDomain", "Games")">Games</a>
+            </li>
+            <li><a href="#">Admin Settings</a></li>
         </ul>
     </div>
 
