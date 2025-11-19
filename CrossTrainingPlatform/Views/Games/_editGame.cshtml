@@ -13,16 +13,21 @@
     </select>
 </div>
 
-<div class="modal-form-group mb-3">
-    <label asp-for="Description" class="control-label fw-bold">Descriere:</label>
-    <textarea asp-for="Description" id="descriptionEdit" class="form-control custom-input" maxlength="300" rows="3" style="resize:none;"></textarea>
+
+<div class="modal-form-group">
+    <label asp-for="Description">Descriere:</label>
+    <textarea asp-for="Description" id="descriptionEdit" maxlength="300" rows="3"></textarea>
 </div>
+
 
 <div class="modal-form-group mb-3">
     <label asp-for="DownloadLink" class="control-label fw-bold">Link download:</label>
     <input asp-for="DownloadLink" class="form-control custom-input" />
 </div>
 
-<div class="text-end">
-    <button class="btn btn-primary" onclick="submitEditGame(@Model.GameId)">Salveaza</button>
+
+<br />
+
+<div class="d-flex justify-content-center">
+    <button type="button" onclick="submitEditGame(@Model.GameId)" class="btn btn-success">Salveaza</button>
 </div>
