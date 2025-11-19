@@ -846,3 +846,55 @@ input::placeholder {
             box-shadow: 0 0 10px rgba(77, 166, 255, 0.5);
             background-color: rgba(10, 25, 50, 1);
         }
+
+
+
+
+.edit-linklinkDisabled {
+    color: dimgrey;
+    text-decoration: none;
+    background: none;
+    border: none;
+}
+
+.edit-link {
+    color: green;
+    text-decoration: none;
+    background: none;
+    border: none;
+    display: inline-block;
+    transition: transform 0.2s, color 0.2s;
+}
+
+    .edit-link:hover {
+        color: darkgreen;
+        transform: scale(1.4);
+    }
+
+.delete-link {
+    color: red;
+    text-decoration: none;
+    background: none;
+    border: none;
+}
+
+    .delete-link:hover {
+        color: darkred;
+        transform: scale(1.4);
+    }
+
+.delete-linkDisabled {
+    color: darkred;
+    text-decoration: none;
+    background: none;
+    border: none;
+}
+
+.card-actions {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    display: flex;
+    gap: 0.25rem;
+    z-index: 10;
+}

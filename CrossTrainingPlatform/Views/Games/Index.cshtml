@@ -31,8 +31,24 @@
             <div class="game-card flip-card" data-expanded="false">
                 <div class="flip-card-inner">
 
+         
                     <!-- FRONT -->
                     <div class="flip-card-front">
+
+                        <!-- ACTION BUTTONS -->
+                        <div class="card-actions">
+                            <button data-bs-toggle="modal" data-bs-target="#editGameModal"
+                                    onclick="loadEditgame(@game.GameId)" class="edit-link">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+
+                            <button data-bs-toggle="modal" data-bs-target="#deleteGameModal"
+                                    onclick="loadDeleteGame(@game.GameId)"
+                                    class="delete-link">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </div>
+
                         @if (!string.IsNullOrEmpty(game.DownloadLink))
                         {
                             <a href="@game.DownloadLink" target="_blank" class="download-btn">
@@ -74,6 +90,11 @@
                 }
             </div>
         }
+
+  
+             
+            
+
     }
 
     <!-- CARD ADD NEW GAME -->
