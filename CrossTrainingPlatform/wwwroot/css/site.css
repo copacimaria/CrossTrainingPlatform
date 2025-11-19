@@ -266,13 +266,7 @@ body {
         border-color: rgba(255,255,255,0.2);
     }
 
-.platform-description {
-    display: flex;
-    justify-content: center;
-    padding: 70px 50px;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(16px);
-}
+
 
 .description-container {
     max-width: 900px;
@@ -284,6 +278,7 @@ body {
     box-shadow: 0 0 25px rgba(0, 153, 255, 0.2);
     color: #dcdcdc;
     animation: glowPulse 4s infinite ease-in-out;
+    margin: 0 auto; /* asta il centreaza */
 }
 
     .description-container h2 {
