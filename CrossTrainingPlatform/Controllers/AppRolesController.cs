@@ -10,7 +10,7 @@ using X.PagedList.Extensions;
 
 namespace KD_Pallet.Controllers
 {
-    [Authorize(Roles = "ViewRoles")]
+   // [Authorize(Roles = "ViewRoles")]
     public class AppRolesController : Controller
     {
         private readonly SupabaseService _supabase;
@@ -21,7 +21,7 @@ namespace KD_Pallet.Controllers
         }
 
         // ---------------- INDEX ----------------
-        [Authorize(Roles = "ViewRoles")]
+        //[Authorize(Roles = "ViewRoles")]
         public async Task<IActionResult> Index(int? page, string roleSearch)
         {
             int pageSize = 13;
@@ -42,15 +42,15 @@ namespace KD_Pallet.Controllers
         }
 
         // ---------------- DETAILS ----------------
-        [Authorize(Roles = "ViewClaim")]
+        //[Authorize(Roles = "ViewClaim")]
         public async Task<IActionResult> Details(int id)
         {
-            string response = await _supabase.GetAsync($"AppRole?Id=eq.{id}");
+            string response = await _supabase.GetAsync($"AppRole?RoleId=eq.{id}");
             var role = JsonSerializer.Deserialize<List<AppRole>>(response)?.FirstOrDefault();
             if (role == null) return NotFound();
 
             // Preluare claim-uri asociate
-            string claimsResponse = await _supabase.GetAsync($"AppClaim?select=*,RoleList(Id)&RoleList.Id=eq.{id}");
+            string claimsResponse = await _supabase.GetAsync($"AppClaim?select=*,RoleList(RoleId)&RoleList.RoleId=eq.{id}");
             var claims = JsonSerializer.Deserialize<List<AppClaim>>(claimsResponse) ?? new List<AppClaim>();
 
             AppRolesClaimsViewModel vm = new AppRolesClaimsViewModel
@@ -63,7 +63,7 @@ namespace KD_Pallet.Controllers
         }
 
         // ---------------- CREATE ----------------
-        [Authorize(Roles = "CreateRoles")]
+       // [Authorize(Roles = "CreateRoles")]
         public IActionResult Create()
         {
             return PartialView("_CreateRole");
@@ -71,7 +71,7 @@ namespace KD_Pallet.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "CreateRoles")]
+        //[Authorize(Roles = "CreateRoles")]
         public async Task<IActionResult> Create([Bind("RoleName")] AppRole appRole)
         {
             if (string.IsNullOrWhiteSpace(appRole.RoleName))
@@ -82,10 +82,10 @@ namespace KD_Pallet.Controllers
         }
 
         // ---------------- EDIT ----------------
-        [Authorize(Roles = "EditRoles")]
+       // [Authorize(Roles = "EditRoles")]
         public async Task<IActionResult> Edit(int id)
         {
-            string response = await _supabase.GetAsync($"AppRole?Id=eq.{id}");
+            string response = await _supabase.GetAsync($"AppRole?RoleId=eq.{id}");
             var role = JsonSerializer.Deserialize<List<AppRole>>(response)?.FirstOrDefault();
             if (role == null) return Json(new { success = false, message = "Rolul nu exista." });
 
@@ -94,18 +94,18 @@ namespace KD_Pallet.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "EditRoles")]
+       // [Authorize(Roles = "EditRoles")]
         public async Task<IActionResult> Edit(int id, string RoleName)
         {
             if (string.IsNullOrWhiteSpace(RoleName))
                 return Json(new { success = false, errors = new[] { "Completati numele rolului!" } });
 
-            await _supabase.PatchAsync($"AppRole?Id=eq.{id}", new { RoleName });
+            await _supabase.PatchAsync($"AppRole?RoleId=eq.{id}", new { RoleName });
             return Json(new { success = true });
         }
 
         // ---------------- DELETE ----------------
-        [Authorize(Roles = "DeleteRoles")]
+        //[Authorize(Roles = "DeleteRoles")]
         public async Task<IActionResult> Delete(int id)
         {
             string response = await _supabase.GetAsync($"AppRole?Id=eq.{id}");
@@ -117,7 +117,7 @@ namespace KD_Pallet.Controllers
 
         [HttpPost, ActionName("DeleteConfirmed")]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "DeleteRoles")]
+        //[Authorize(Roles = "DeleteRoles")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             // Soft delete
@@ -126,7 +126,7 @@ namespace KD_Pallet.Controllers
         }
 
         // ---------------- ADD CLAIM ----------------
-        [Authorize(Roles = "AddClaim")]
+        //[Authorize(Roles = "AddClaim")]
         public async Task<IActionResult> AddClaim(int id)
         {
             string roleResponse = await _supabase.GetAsync($"AppRole?Id=eq.{id}");
@@ -157,7 +157,7 @@ namespace KD_Pallet.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "AddClaim")]
+       // [Authorize(Roles = "AddClaim")]
         public async Task<IActionResult> AddClaim(int roleId, string claimToken)
         {
             string idString;
@@ -174,7 +174,7 @@ namespace KD_Pallet.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "RemoveClaim")]
+        //[Authorize(Roles = "RemoveClaim")]
         public async Task<IActionResult> RemoveClaim(int RoleID, int ClaimID)
         {
             // stergere in tabel many-to-many AppRolesClaims

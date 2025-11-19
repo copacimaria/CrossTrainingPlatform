@@ -7,7 +7,7 @@ using X.PagedList.Extensions;
 
 namespace KD_Pallet.Controllers
 {
-    [Authorize(Roles = "ViewClaim")]
+    //[Authorize(Roles = "ViewClaim")]
     public class AppClaimsController : Controller
     {
         private readonly SupabaseService _supabase;

@@ -99,30 +99,30 @@
                         <td>@Html.DisplayFor(m => item.RoleName)</td>
 
                         <td>
-                            @if   ( User.HasClaim(c => c.Value == "AddClaim") || User.HasClaim(c => c.Value == "RemoveClaim"))
-                            {
+                           @*  @if   ( User.HasClaim(c => c.Value == "AddClaim") || User.HasClaim(c => c.Value == "RemoveClaim"))
+                            { *@
                             <a asp-controller="AppRoles" asp-action="Details" asp-route-id="@item.RoleId"
-                               class="btn btn-info btn-sm butonActiuniPalet" style="color:black; font-weight:bold">
+                               class="btn btn-info btn-sm" style="color:red; font-weight:bold">
                                 <i class="bi bi-plus-circle" style="font-weight:bold"></i> Drepturi
                             </a>
-                            }
+                           @*  } *@
                         </td>
 
                         <td>
-                            @if (User.HasClaim(c => c.Value == "EditRoles"))
-                            {
+                            @* @if (User.HasClaim(c => c.Value == "EditRoles"))
+                            { *@
                                 <button data-bs-toggle="modal" data-bs-target="#editRoleModal"
                                         onclick="loadEditRole(@item.RoleId)" class="edit-link">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
-                            }
-                            @if (User.HasClaim(c => c.Value == "DeleteRoles"))
-                            {
+                            @* } *@
+                            @* @if (User.HasClaim(c => c.Value == "DeleteRoles"))
+                            { *@
                                 <button data-bs-toggle="modal" data-bs-target="#deleteRoleModal"
                                         onclick="loadDeleteRole(@item.RoleId)" class="delete-link">
                                     <i class="bi bi-trash3"></i>
                                 </button>
-                            }
+                            @* } *@
                         </td>
 
                     </tr>
