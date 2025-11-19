@@ -28,6 +28,15 @@ namespace CrossTrainingPlatform.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
+            // Verifică dacă emailul există deja
+            var existingUserResponse = await _supabase.GetAsync($"AppUser?Email=eq.{model.Email}");
+            var existingUsers = JsonSerializer.Deserialize<List<AppUser>>(existingUserResponse);
+            if (existingUsers != null && existingUsers.Count > 0)
+            {
+                ModelState.AddModelError("", "Exista deja un cont cu acest email.");
+                return View(model);
+            }
+
             var newUser = new
             {
                 Name = model.Name,
@@ -56,6 +65,7 @@ namespace CrossTrainingPlatform.Controllers
             // Redirect către SelectDomain cu userId
             return RedirectToAction("SelectDomain", "Domain", new { userId = createdUser.UserId });
         }
+
 
 
 

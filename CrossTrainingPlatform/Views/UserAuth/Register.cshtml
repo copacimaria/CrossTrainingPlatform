@@ -4,6 +4,17 @@
     <div class="register-container">
         <h2>Create Account</h2>
 
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div style="color:red; margin-bottom:10px;">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@error.ErrorMessage</div>
+                }
+            </div>
+        }
+
+
         <form method="post">
             <div class="form-group">
                 <label>Name</label>
