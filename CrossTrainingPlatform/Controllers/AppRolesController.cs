@@ -30,14 +30,18 @@ namespace KD_Pallet.Controllers
             string response = await _supabase.GetAsync("AppRole?select=*");
             var roles = JsonSerializer.Deserialize<List<AppRole>>(response) ?? new List<AppRole>();
 
+            var activeRoles = roles.Where(r => r.IsActive == true);
+
+
             if (!string.IsNullOrEmpty(roleSearch))
             {
-                roles = roles
+                activeRoles = activeRoles
                     .Where(r => r.RoleName.Contains(roleSearch, StringComparison.OrdinalIgnoreCase))
                     .ToList();
             }
 
-            var pagedRoles = roles.OrderBy(r => r.RoleName).ToPagedList(pageNumber, pageSize);
+            
+            var pagedRoles = activeRoles.OrderBy(r => r.RoleName).ToPagedList(pageNumber, pageSize);
             return View(pagedRoles);
         }
 
@@ -108,7 +112,7 @@ namespace KD_Pallet.Controllers
         //[Authorize(Roles = "DeleteRoles")]
         public async Task<IActionResult> Delete(int id)
         {
-            string response = await _supabase.GetAsync($"AppRole?Id=eq.{id}");
+            string response = await _supabase.GetAsync($"AppRole?RoleId=eq.{id}");
             var role = JsonSerializer.Deserialize<List<AppRole>>(response)?.FirstOrDefault();
             if (role == null) return Json(new { success = false, message = "Rolul nu exista." });
 
@@ -121,7 +125,7 @@ namespace KD_Pallet.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             // Soft delete
-            await _supabase.PatchAsync($"AppRole?Id=eq.{id}", new { IsActive = false });
+            await _supabase.PatchAsync($"AppRole?RoleId=eq.{id}", new { IsActive = false });
             return Json(new { success = true });
         }
 
