@@ -58,7 +58,7 @@ namespace CrossTrainingPlatform.Controllers
 
             try
             {
-                // luam userul (fara joinuri, DomainList vine din JSONB)
+                // luam userul
                 string endpointUser = $"AppUser?UserId=eq.{userId}&select=*";
                 var responseUser = await _supabase.GetAsync(endpointUser);
                 var users = Newtonsoft.Json.JsonConvert.DeserializeObject<List<AppUser>>(responseUser);
@@ -68,20 +68,34 @@ namespace CrossTrainingPlatform.Controllers
 
                 var user = users.First();
 
-                // DomainList e lista de int
                 if (user.DomainList == null || user.DomainList.Count == 0)
                     return BadRequest("User has no domains");
 
-                // luam primul DomainId
                 int domainId = user.DomainList.First();
 
+                // luam toate domeniile
+                var responseDomains = await _supabase.GetAsync("Domain");
+                var allDomains = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Domain>>(responseDomains);
+
                 // jocurile pentru domeniu
-                string endpointGameForSelectedDomain = $"Game?DomainId=eq.{domainId}";
-                var resultSelectedDomain = await _supabase.GetAsync(endpointGameForSelectedDomain);
+                var resultSelectedDomain = await _supabase.GetAsync($"Game?DomainId=eq.{domainId}");
                 var resultAll = await _supabase.GetAsync("Game");
 
-                var gamesForDomain = ParseGames(resultSelectedDomain);
-                var allGames = ParseGames(resultAll);
+                var gamesForDomain = ParseGames(resultSelectedDomain)
+                    .Select(g =>
+                    {
+                        g.Domain = allDomains.FirstOrDefault(d => d.DomainId == g.DomainId);
+                        return g;
+                    })
+                    .ToList();
+
+                var allGames = ParseGames(resultAll)
+                    .Select(g =>
+                    {
+                        g.Domain = allDomains.FirstOrDefault(d => d.DomainId == g.DomainId);
+                        return g;
+                    })
+                    .ToList();
 
                 var vm = new GamesViewModel
                 {
@@ -100,6 +114,7 @@ namespace CrossTrainingPlatform.Controllers
                 });
             }
         }
+
 
     }
 
