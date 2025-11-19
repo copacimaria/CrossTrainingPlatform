@@ -10,7 +10,11 @@ namespace CrossTrainingPlatform.Models
         public string GameName { get; set; }
         public bool IsActive { get; set; } = true;
         public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
-        public string? Description { get; set; }
+
+
+        [MaxLength(300, ErrorMessage = "Descrierea nu poate depasi 300 de caractere.")]
+        public string Description { get; set; }
+
         public string? DownloadLink { get; set; }
 
         public List<AppUser>? UserList { get; set; }

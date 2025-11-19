@@ -1,4 +1,4 @@
-html {
+﻿html {
     font-size: 14px;
     position: relative;
     min-height: 100%;
@@ -645,22 +645,25 @@ input::placeholder {
     overflow: hidden;
 }
 
+
 .flip-card-back {
     transform: rotateY(180deg);
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     text-align: left;
-    overflow-y: auto;
+    overflow: hidden; /* NU mai apare scroll */
     box-sizing: border-box;
     word-wrap: break-word;
 }
 
+
 .game-description {
     margin: 0;
-    line-height: 1.4;
-    font-size: 9px;
+    line-height: 1;
+    font-size: 10px;
     text-align: left;
+    color: deepskyblue;
 }
 
 /* DOWNLOAD ICON */
@@ -684,7 +687,11 @@ input::placeholder {
 }
 
 .suitable {
-    margin-top: 10px;
+    position: absolute; /* asigură vizibilitate */
+    bottom: 5px; /* la baza cardului */
+    left: 65px;
     color: #4cff4c;
     font-weight: bold;
+    font-size: 1rem;
+    z-index: 5; /* deasupra conținutului front */
 }
