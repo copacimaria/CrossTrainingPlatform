@@ -87,13 +87,17 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     
     <script>
+
         const sidebarToggle = document.getElementById('sidebarToggle');
         const sidebar = document.getElementById('sidebar');
         const closeSidebar = document.getElementById('closeSidebar');
 
-        sidebarToggle.addEventListener('click', () => {
+        if(sidebarToggle !=null){
+            sidebarToggle.addEventListener('click', () => {
             sidebar.classList.add('active'); // deschide sidebar
         });
+        }
+        
 
         closeSidebar.addEventListener('click', () => {
             sidebar.classList.remove('active'); // închide sidebar
