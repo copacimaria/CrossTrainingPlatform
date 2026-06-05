@@ -15,8 +15,13 @@ builder.Services.AddSession(options =>
 // MVC
 builder.Services.AddControllersWithViews();
 
-// Supabase service
-builder.Services.AddSingleton<SupabaseService>();
+// Acces date SQL Server
+builder.Services.AddSingleton<SqlConnectionFactory>();
+builder.Services.AddScoped<AppUserService>();
+builder.Services.AddScoped<AppRoleService>();
+builder.Services.AddScoped<AppClaimService>();
+builder.Services.AddScoped<DomainService>();
+builder.Services.AddScoped<GameService>();
 
 var app = builder.Build();
 

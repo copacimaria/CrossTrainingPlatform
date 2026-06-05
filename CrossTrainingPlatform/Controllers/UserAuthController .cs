@@ -1,18 +1,19 @@
-﻿using CrossTrainingPlatform.Models.UserManagementModels;
+using CrossTrainingPlatform.Models.UserManagementModels;
 using CrossTrainingPlatform.Models.ViewModels;
 using CrossTrainingPlatform.Services.DatabaseServices;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 
 namespace CrossTrainingPlatform.Controllers
 {
     public class UserAuthController : Controller
     {
-        private readonly SupabaseService _supabase;
+        private readonly AppUserService _users;
+        private readonly AppRoleService _roles;
 
-        public UserAuthController(SupabaseService supabase)
+        public UserAuthController(AppUserService users, AppRoleService roles)
         {
-            _supabase = supabase;
+            _users = users;
+            _roles = roles;
         }
 
         // --------------------- REGISTER ---------------------
@@ -28,16 +29,15 @@ namespace CrossTrainingPlatform.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            // Verifică dacă emailul există deja
-            var existingUserResponse = await _supabase.GetAsync($"AppUser?Email=eq.{model.Email}");
-            var existingUsers = JsonSerializer.Deserialize<List<AppUser>>(existingUserResponse);
-            if (existingUsers != null && existingUsers.Count > 0)
+            // Verifica daca emailul exista deja
+            var existing = await _users.GetByEmailAsync(model.Email);
+            if (existing != null)
             {
                 ModelState.AddModelError("", "Exista deja un cont cu acest email.");
                 return View(model);
             }
 
-            var newUser = new
+            var newUser = new AppUser
             {
                 Name = model.Name,
                 FamilyName = model.FamilyName,
@@ -45,29 +45,15 @@ namespace CrossTrainingPlatform.Controllers
                 AccPassword = model.Password,
                 CreationDate = DateTime.Now,
                 isActive = true,
-                RoleId = 1
+                RoleId = 1,
+                DomainList = new List<int>()
             };
 
-            // Creează utilizatorul în Supabase
-            await _supabase.PostAsync("AppUser", newUser);
+            int newUserId = await _users.CreateAsync(newUser);
 
-            // Preia utilizatorul după email
-            var getResult = await _supabase.GetAsync($"AppUser?Email=eq.{model.Email}");
-            var userList = JsonSerializer.Deserialize<List<AppUser>>(getResult);
-            var createdUser = userList?.FirstOrDefault();
-
-            if (createdUser == null)
-            {
-                ModelState.AddModelError("", "Nu s-a putut prelua utilizatorul creat.");
-                return View(model);
-            }
-
-            // Redirect către SelectDomain cu userId
-            return RedirectToAction("SelectDomain", "Domain", new { userId = createdUser.UserId });
+            // Redirect catre SelectDomain cu userId
+            return RedirectToAction("SelectDomain", "Domain", new { userId = newUserId });
         }
-
-
-
 
         // --------------------- LOGIN ---------------------
         [HttpGet]
@@ -82,36 +68,29 @@ namespace CrossTrainingPlatform.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            // Query Supabase
-            string endpoint = $"AppUser?Email=eq.{model.Email}&AccPassword=eq.{model.Password}&select=*";
-            string response = await _supabase.GetAsync(endpoint);
+            var user = await _users.GetByCredentialsAsync(model.Email, model.Password);
 
-            var users = Newtonsoft.Json.JsonConvert.DeserializeObject<List<AppUser>>(response);
-
-            if (users == null || users.Count == 0)
+            if (user == null)
             {
                 ModelState.AddModelError("", "Invalid email or password!");
                 return View(model);
             }
 
-            var user = users.First();
-
             // -------------------------------
             // SAVE USER IN SESSION
-            // ------------------------------
+            // -------------------------------
             HttpContext.Session.SetInt32("UserId", user.UserId);
             HttpContext.Session.SetString("FullName", $"{user.Name} {user.FamilyName}");
             HttpContext.Session.SetString("Email", user.Email ?? "");
 
-            if (user.Role != null)
-                HttpContext.Session.SetString("RoleName", user.Role.RoleName);
+            if (user.RoleId != null)
+            {
+                var role = await _roles.GetByIdAsync(user.RoleId.Value);
+                if (role != null)
+                    HttpContext.Session.SetString("RoleName", role.RoleName);
+            }
 
-
-            // redirect
-            //return RedirectToAction("SelectDomain", "Domain");
             return RedirectToAction("DisplayGamesBasedOnDomain", "Games");
         }
-
     }
 }
-

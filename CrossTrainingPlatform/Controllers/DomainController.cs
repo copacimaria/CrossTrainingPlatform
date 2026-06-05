@@ -1,24 +1,24 @@
-﻿using CrossTrainingPlatform.Models;
+using CrossTrainingPlatform.Models;
 using CrossTrainingPlatform.Services.DatabaseServices;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 
 namespace CrossTrainingPlatform.Controllers
 {
     public class DomainController : Controller
     {
-        private readonly SupabaseService _supabase;
+        private readonly DomainService _domains;
+        private readonly AppUserService _users;
 
-        public DomainController(SupabaseService supabase)
+        public DomainController(DomainService domains, AppUserService users)
         {
-            _supabase = supabase;
+            _domains = domains;
+            _users = users;
         }
 
         // ------------------- INDEX -------------------
         public async Task<IActionResult> Index()
         {
-            string response = await _supabase.GetAsync("Domain?select=*");
-            var domains = JsonSerializer.Deserialize<List<Domain>>(response);
+            var domains = await _domains.GetAllAsync();
             return View(domains);
         }
 
@@ -35,14 +35,7 @@ namespace CrossTrainingPlatform.Controllers
             if (!ModelState.IsValid)
                 return View(domain);
 
-            var newDomain = new
-            {
-                DomainName = domain.DomainName,
-                IsActive = domain.IsActive,
-                GameId = domain.GameId
-            };
-
-            await _supabase.PostAsync("Domain", newDomain);
+            await _domains.CreateAsync(domain);
             return RedirectToAction("Index");
         }
 
@@ -50,8 +43,7 @@ namespace CrossTrainingPlatform.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-            string response = await _supabase.GetAsync($"Domain?DomainId=eq.{id}");
-            var domain = JsonSerializer.Deserialize<List<Domain>>(response)?.FirstOrDefault();
+            var domain = await _domains.GetByIdAsync(id);
             if (domain == null)
                 return NotFound();
 
@@ -64,14 +56,7 @@ namespace CrossTrainingPlatform.Controllers
             if (!ModelState.IsValid)
                 return View(domain);
 
-            var updatedDomain = new
-            {
-                DomainName = domain.DomainName,
-                IsActive = domain.IsActive,
-                GameId = domain.GameId
-            };
-
-            await _supabase.PatchAsync($"Domain?DomainId=eq.{id}", updatedDomain);
+            await _domains.UpdateAsync(id, domain);
             return RedirectToAction("Index");
         }
 
@@ -79,8 +64,7 @@ namespace CrossTrainingPlatform.Controllers
         [HttpGet]
         public async Task<IActionResult> Delete(int id)
         {
-            string response = await _supabase.GetAsync($"Domain?DomainId=eq.{id}");
-            var domain = JsonSerializer.Deserialize<List<Domain>>(response)?.FirstOrDefault();
+            var domain = await _domains.GetByIdAsync(id);
             if (domain == null)
                 return NotFound();
 
@@ -90,15 +74,14 @@ namespace CrossTrainingPlatform.Controllers
         [HttpPost, ActionName("Delete")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            await _supabase.DeleteAsync($"Domain?DomainId=eq.{id}");
+            await _domains.DeleteAsync(id);
             return RedirectToAction("Index");
         }
 
-     
+        // ------------------- SELECT DOMAIN (la inregistrare) -------------------
         public async Task<IActionResult> SelectDomain(int userId)
         {
-            string response = await _supabase.GetAsync("Domain?IsActive=eq.true&select=*");
-            var domains = JsonSerializer.Deserialize<List<Domain>>(response);
+            var domains = await _domains.GetActiveAsync();
 
             ViewBag.DomainList = domains;
             ViewBag.UserId = userId;
@@ -106,28 +89,16 @@ namespace CrossTrainingPlatform.Controllers
             return View();
         }
 
-
         [HttpPost]
         public async Task<IActionResult> SaveUserDomain(int userId, int domainId)
         {
             if (domainId == 0)
                 return RedirectToAction("SelectDomain", new { userId }); // daca nu a ales nimic
 
-            // Patch in Supabase pentru user
-            
-              var updateData = new Dictionary<string, object>
-              {
-                  { "DomainList", new int[] { domainId } }
-              };
-
-            await _supabase.PatchAsync($"AppUser?UserId=eq.{userId}", updateData);
-
+            await _users.UpdateDomainListAsync(userId, new List<int> { domainId });
 
             // Redirect catre login
             return RedirectToAction("Login", "UserAuth");
         }
-
-
-
     }
 }

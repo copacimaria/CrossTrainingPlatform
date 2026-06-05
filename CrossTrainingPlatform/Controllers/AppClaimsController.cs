@@ -1,31 +1,26 @@
-﻿using CrossTrainingPlatform.Models.UserManagementModels;
+using CrossTrainingPlatform.Models.UserManagementModels;
 using CrossTrainingPlatform.Services.DatabaseServices;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 using X.PagedList.Extensions;
 
 namespace KD_Pallet.Controllers
 {
-    //[Authorize(Roles = "ViewClaim")]
     public class AppClaimsController : Controller
     {
-        private readonly SupabaseService _supabase;
+        private readonly AppClaimService _claims;
 
-        public AppClaimsController(SupabaseService supabase)
+        public AppClaimsController(AppClaimService claims)
         {
-            _supabase = supabase;
+            _claims = claims;
         }
 
         // ---------------- INDEX ----------------
-       // [Authorize(Roles = "ViewClaim")]
         public async Task<IActionResult> Index(int? page, string claimSearch)
         {
             int pageSize = 13;
             int pageNumber = page ?? 1;
 
-            string response = await _supabase.GetAsync("AppClaim?select=*");
-            var appClaims = JsonSerializer.Deserialize<List<AppClaim>>(response) ?? new List<AppClaim>();
+            var appClaims = await _claims.GetAllAsync();
 
             if (!string.IsNullOrEmpty(claimSearch))
             {
@@ -39,18 +34,15 @@ namespace KD_Pallet.Controllers
         }
 
         // ---------------- DETAILS ----------------
-       // [Authorize(Roles = "ViewClaim")]
         public async Task<IActionResult> Details(int id)
         {
-            string response = await _supabase.GetAsync($"AppClaim?ClaimId=eq.{id}");
-            var appClaim = JsonSerializer.Deserialize<List<AppClaim>>(response)?.FirstOrDefault();
+            var appClaim = await _claims.GetByIdAsync(id);
             if (appClaim == null) return NotFound();
 
             return PartialView("_DetailsRolesofClaim", appClaim);
         }
 
         // ---------------- CREATE ----------------
-       // [Authorize(Roles = "CreateClaim")]
         public IActionResult Create()
         {
             return PartialView("_CreateClaim");
@@ -58,22 +50,19 @@ namespace KD_Pallet.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-       // [Authorize(Roles = "CreateClaim")]
         public async Task<IActionResult> Create([Bind("ClaimName")] AppClaim appClaim)
         {
             if (string.IsNullOrWhiteSpace(appClaim.ClaimName))
                 return Json(new { success = false, errors = new[] { "Claim-ul trebuie sa aiba un nume!" } });
 
-            await _supabase.PostAsync("AppClaim", new { ClaimName = appClaim.ClaimName });
+            await _claims.CreateAsync(appClaim.ClaimName);
             return Json(new { success = true });
         }
 
         // ---------------- EDIT ----------------
-       // [Authorize(Roles = "EditClaim")]
         public async Task<IActionResult> Edit(int id)
         {
-            string response = await _supabase.GetAsync($"AppClaim?ClaimId=eq.{id}");
-            var appClaim = JsonSerializer.Deserialize<List<AppClaim>>(response)?.FirstOrDefault();
+            var appClaim = await _claims.GetByIdAsync(id);
             if (appClaim == null) return Json(new { success = false, message = "Claim-ul nu exista." });
 
             return PartialView("_EditClaim", appClaim);
@@ -81,19 +70,16 @@ namespace KD_Pallet.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        //[Authorize(Roles = "EditClaim")]
         public async Task<IActionResult> Edit(int id, [Bind("ClaimName")] AppClaim appClaim)
         {
-            await _supabase.PatchAsync($"AppClaim?ClaimId=eq.{id}", new { ClaimName = appClaim.ClaimName });
+            await _claims.UpdateNameAsync(id, appClaim.ClaimName);
             return Json(new { success = true });
         }
 
         // ---------------- DELETE ----------------
-        //[Authorize(Roles = "DeleteClaim")]
         public async Task<IActionResult> Delete(int id)
         {
-            string response = await _supabase.GetAsync($"AppClaim?ClaimId=eq.{id}");
-            var appClaim = JsonSerializer.Deserialize<List<AppClaim>>(response)?.FirstOrDefault();
+            var appClaim = await _claims.GetByIdAsync(id);
             if (appClaim == null) return Json(new { success = false, message = "Claim-ul nu exista." });
 
             return PartialView("_DeleteClaim", appClaim);
@@ -101,10 +87,9 @@ namespace KD_Pallet.Controllers
 
         [HttpPost, ActionName("DeleteConfirmed")]
         [ValidateAntiForgeryToken]
-        //[Authorize(Roles = "DeleteClaim")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            await _supabase.DeleteAsync($"AppClaim?ClaimId=eq.{id}");
+            await _claims.DeleteAsync(id);
             return Json(new { success = true });
         }
     }

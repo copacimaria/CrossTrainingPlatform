@@ -1,20 +1,21 @@
-﻿using CrossTrainingPlatform.Models;
-using CrossTrainingPlatform.Models.UserManagementModels;
+using CrossTrainingPlatform.Models;
 using CrossTrainingPlatform.Models.ViewModels;
 using CrossTrainingPlatform.Services.DatabaseServices;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using System.Data;
 
 namespace CrossTrainingPlatform.Controllers
 {
     public class ProfileController : Controller
     {
-        private readonly SupabaseService _supabase;
+        private readonly AppUserService _users;
+        private readonly AppRoleService _roles;
+        private readonly DomainService _domains;
 
-        public ProfileController(SupabaseService supabase)
+        public ProfileController(AppUserService users, AppRoleService roles, DomainService domains)
         {
-            _supabase = supabase;
+            _users = users;
+            _roles = roles;
+            _domains = domains;
         }
 
         public async Task<IActionResult> Index()
@@ -23,34 +24,23 @@ namespace CrossTrainingPlatform.Controllers
             if (userId == null)
                 return RedirectToAction("Login", "UserAuth");
 
-            // get user
-            string json = await _supabase.GetAsync($"AppUser?UserId=eq.{userId}&select=*");
-            var list = JsonConvert.DeserializeObject<List<AppUser>>(json);
-
-            if (list == null || list.Count == 0)
+            var user = await _users.GetByIdAsync(userId.Value);
+            if (user == null)
                 return NotFound("User not found");
 
-            var user = list.First();
-
-            // get role
-            string roleJson = await _supabase.GetAsync($"AppRole?RoleId=eq.{user.RoleId}");
-            var roleList = JsonConvert.DeserializeObject<List<AppRole>>(roleJson);
-            string roleName = roleList.FirstOrDefault()?.RoleName ?? "";
-
-            // get domains
-            var domainIds = user.DomainList ?? new List<int>();
-            List<Domain> domains = new List<Domain>();
-
-            if (domainIds.Count > 0)
+            // rol
+            string roleName = "";
+            if (user.RoleId != null)
             {
-                string idList = string.Join(",", domainIds);
-                string domainJson = await _supabase.GetAsync($"Domain?DomainId=in.({idList})");
-                domains = JsonConvert.DeserializeObject<List<Domain>>(domainJson);
+                var role = await _roles.GetByIdAsync(user.RoleId.Value);
+                roleName = role?.RoleName ?? "";
             }
 
+            // domenii
+            var domainIds = user.DomainList ?? new List<int>();
+            var domains = await _domains.GetByIdsAsync(domainIds);
             string domainNames = string.Join(", ", domains.Select(d => d.DomainName));
 
-            // view model
             var model = new ProfileViewModel
             {
                 FullName = $"{user.Name} {user.FamilyName}",
@@ -78,11 +68,7 @@ namespace CrossTrainingPlatform.Controllers
             if (userId == null)
                 return RedirectToAction("Login", "UserAuth");
 
-            // luam userul
-            string userJson = await _supabase.GetAsync($"AppUser?UserId=eq.{userId}");
-            var list = JsonConvert.DeserializeObject<List<AppUser>>(userJson);
-            var user = list.FirstOrDefault();
-
+            var user = await _users.GetByIdAsync(userId.Value);
             if (user == null)
             {
                 ModelState.AddModelError("", "User not found");
@@ -103,19 +89,11 @@ namespace CrossTrainingPlatform.Controllers
                 return View(model);
             }
 
-            // update parola in Supabase
-            var updateData = new
-            {
-                AccPassword = model.NewPassword
-            };
-
-            await _supabase.PatchAsync($"AppUser?UserId=eq.{userId}", updateData);
+            await _users.UpdatePasswordAsync(userId.Value, model.NewPassword);
 
             ViewBag.Success = "Parola a fost schimbata cu succes!";
-
             return View();
         }
-
 
         [HttpGet]
         public async Task<IActionResult> ChangeDomain()
@@ -124,10 +102,7 @@ namespace CrossTrainingPlatform.Controllers
             if (userId == null)
                 return RedirectToAction("Login", "UserAuth");
 
-            string userJson = await _supabase.GetAsync($"AppUser?UserId=eq.{userId}");
-            var list = JsonConvert.DeserializeObject<List<AppUser>>(userJson);
-            var user = list.FirstOrDefault();
-
+            var user = await _users.GetByIdAsync(userId.Value);
             if (user == null)
                 return NotFound("User not found");
 
@@ -135,8 +110,7 @@ namespace CrossTrainingPlatform.Controllers
                 ? user.DomainList[0]
                 : 0;
 
-            string domainJson = await _supabase.GetAsync("Domain?IsActive=eq.true&select=*");
-            var domains = JsonConvert.DeserializeObject<List<Domain>>(domainJson);
+            var domains = await _domains.GetActiveAsync();
 
             var vm = new ChangeDomainVM
             {
@@ -146,7 +120,6 @@ namespace CrossTrainingPlatform.Controllers
 
             return View(vm);
         }
-
 
         [HttpPost]
         public async Task<IActionResult> ChangeDomain(ChangeDomainVM model)
@@ -161,18 +134,10 @@ namespace CrossTrainingPlatform.Controllers
                 return await ChangeDomain();
             }
 
-            var updateData = new
-            {
-                DomainList = new List<int> { model.DomainId }
-            };
-
-            await _supabase.PatchAsync($"AppUser?UserId=eq.{userId}", updateData);
+            await _users.UpdateDomainListAsync(userId.Value, new List<int> { model.DomainId });
 
             TempData["Success"] = "Domeniul a fost schimbat.";
             return RedirectToAction("Index");
         }
-
-
-
     }
 }

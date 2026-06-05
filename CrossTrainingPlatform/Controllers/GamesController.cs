@@ -1,54 +1,23 @@
-﻿using CrossTrainingPlatform.Models;
-using CrossTrainingPlatform.Models.DTOs;
-using CrossTrainingPlatform.Models.UserManagementModels;
+using CrossTrainingPlatform.Models;
 using CrossTrainingPlatform.Models.ViewModels;
 using CrossTrainingPlatform.Services.DatabaseServices;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace CrossTrainingPlatform.Controllers
 {
     public class GamesController : Controller
     {
-        private readonly SupabaseService _supabase;
+        private readonly GameService _games;
+        private readonly DomainService _domains;
+        private readonly AppUserService _users;
 
-        public GamesController(SupabaseService supabase)
+        public GamesController(GameService games, DomainService domains, AppUserService users)
         {
-            _supabase = supabase;
+            _games = games;
+            _domains = domains;
+            _users = users;
         }
-
-
-        private List<Game> ParseGames(string json)
-        {
-            if (string.IsNullOrWhiteSpace(json))
-                return new List<Game>();
-
-            try
-            {
-                var token = JToken.Parse(json);
-
-                if (token.Type == JTokenType.Array)
-                    return token.ToObject<List<Game>>() ?? new List<Game>();
-
-                var arr =
-                    token["data"] ??
-                    token["result"] ??
-                    token;
-
-                if (arr.Type == JTokenType.Array)
-                    return arr.ToObject<List<Game>>() ?? new List<Game>();
-
-                return new List<Game>();
-            }
-            catch
-            {
-                return new List<Game>();
-            }
-        }
-
-
 
         [HttpGet]
         public async Task<IActionResult> DisplayGamesBasedOnDomain()
@@ -59,44 +28,25 @@ namespace CrossTrainingPlatform.Controllers
 
             try
             {
-                // luam userul
-                string endpointUser = $"AppUser?UserId=eq.{userId}&select=*";
-                var responseUser = await _supabase.GetAsync(endpointUser);
-                var users = Newtonsoft.Json.JsonConvert.DeserializeObject<List<AppUser>>(responseUser);
-
-                if (users == null || users.Count == 0)
+                var user = await _users.GetByIdAsync(userId.Value);
+                if (user == null)
                     return BadRequest("User not found");
-
-                var user = users.First();
 
                 if (user.DomainList == null || user.DomainList.Count == 0)
                     return BadRequest("User has no domains");
 
                 int domainId = user.DomainList.First();
 
-                // luam toate domeniile
-                var responseDomains = await _supabase.GetAsync("Domain");
-                var allDomains = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Domain>>(responseDomains);
+                var allDomains = await _domains.GetAllAsync();
 
-                // jocurile pentru domeniu
-                var resultSelectedDomain = await _supabase.GetAsync($"Game?DomainId=eq.{domainId}");
-                var resultAll = await _supabase.GetAsync("Game");
+                var gamesForDomain = await _games.GetByDomainAsync(domainId);
+                var allGames = await _games.GetAllAsync();
 
-                var gamesForDomain = ParseGames(resultSelectedDomain)
-                    .Select(g =>
-                    {
-                        g.Domain = allDomains.FirstOrDefault(d => d.DomainId == g.DomainId);
-                        return g;
-                    })
-                    .ToList();
+                foreach (var g in gamesForDomain)
+                    g.Domain = allDomains.FirstOrDefault(d => d.DomainId == g.DomainId);
 
-                var allGames = ParseGames(resultAll)
-                    .Select(g =>
-                    {
-                        g.Domain = allDomains.FirstOrDefault(d => d.DomainId == g.DomainId);
-                        return g;
-                    })
-                    .ToList();
+                foreach (var g in allGames)
+                    g.Domain = allDomains.FirstOrDefault(d => d.DomainId == g.DomainId);
 
                 var vm = new GamesViewModel
                 {
@@ -116,19 +66,14 @@ namespace CrossTrainingPlatform.Controllers
             }
         }
 
-
-
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            string domainJson = await _supabase.GetAsync("Domain?IsActive=eq.true&select=*");
-            var domains = JsonConvert.DeserializeObject<List<Domain>>(domainJson);
-
+            var domains = await _domains.GetActiveAsync();
             ViewBag.Domains = new SelectList(domains, "DomainId", "DomainName");
 
             return PartialView("_CreateGame", new Game());
         }
-
 
         // POST: Games/Create
         [HttpPost]
@@ -137,50 +82,29 @@ namespace CrossTrainingPlatform.Controllers
         {
             if (!ModelState.IsValid)
             {
-                string domainJson = await _supabase.GetAsync("Domain?IsActive=eq.true&select=*");
-                var domains = JsonConvert.DeserializeObject<List<Domain>>(domainJson);
+                var domains = await _domains.GetActiveAsync();
                 ViewBag.Domains = new SelectList(domains, "DomainId", "DomainName");
                 return PartialView("_CreateGame", game);
             }
 
             game.CreatedAt = DateTime.Now;
-
-            GameDTO gameDto = new GameDTO
-            {
-                GameName = game.GameName,
-                IsActive = game.IsActive,
-                CreatedAt = game.CreatedAt,
-                Description = game.Description,
-                DownloadLink = game.DownloadLink,
-                DomainId = game.DomainId
-            };
-
-            var result = await _supabase.PostAsync("Game", gameDto);
+            await _games.CreateAsync(game);
 
             return Json(new { success = true, message = "Game created successfully!" });
         }
 
-
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-            // luam game-ul din supabase
-            string gameJson = await _supabase.GetAsync($"Game?GameId=eq.{id}&select=*");
-            var gameList = JsonConvert.DeserializeObject<List<Game>>(gameJson);
-            var game = gameList.FirstOrDefault();
-
+            var game = await _games.GetByIdAsync(id);
             if (game == null)
                 return NotFound();
 
-            // incarcam domeniile
-            string domainJson = await _supabase.GetAsync("Domain?IsActive=eq.true&select=*");
-            var domains = JsonConvert.DeserializeObject<List<Domain>>(domainJson);
-
+            var domains = await _domains.GetActiveAsync();
             ViewBag.Domains = new SelectList(domains, "DomainId", "DomainName", game.DomainId);
 
             return PartialView("_EditGame", game);
         }
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -188,63 +112,33 @@ namespace CrossTrainingPlatform.Controllers
         {
             if (!ModelState.IsValid)
             {
-                string domainJson = await _supabase.GetAsync("Domain?IsActive=eq.true&select=*");
-                var domains = JsonConvert.DeserializeObject<List<Domain>>(domainJson);
-
+                var domains = await _domains.GetActiveAsync();
                 ViewBag.Domains = new SelectList(domains, "DomainId", "DomainName", game.DomainId);
-
                 return PartialView("_EditGame", game);
             }
 
-            // DTO pentru update
-            var gameDto = new
-            {
-                GameName = game.GameName,
-                Description = game.Description,
-                DownloadLink = game.DownloadLink,
-                DomainId = game.DomainId
-            };
-
-            // apel patch supabase
-            var result = await _supabase.PatchAsync($"Game?GameId=eq.{id}", gameDto);
+            await _games.UpdateAsync(id, game);
 
             return Json(new { success = true, message = "Game updated successfully!" });
         }
 
-
         [HttpGet]
         public async Task<IActionResult> Delete(int id)
         {
-            string gameJson = await _supabase.GetAsync($"Game?GameId=eq.{id}");
-            var games = JsonConvert.DeserializeObject<List<Game>>(gameJson);
-            var game = games.FirstOrDefault();
-
+            var game = await _games.GetByIdAsync(id);
             if (game == null)
                 return NotFound();
 
             return PartialView("_DeleteGame", game);
         }
 
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> PostDelete(int gameId)
         {
-            var updateData = new { IsActive = false };
-            var result = await _supabase.PatchAsync($"Game?GameId=eq.{gameId}", updateData);
+            await _games.SoftDeleteAsync(gameId);
 
             return Json(new { success = true, message = "Game deleted successfully!" });
         }
-
-
-
     }
-
-} 
-
-
-
-
-
-
-
+}
