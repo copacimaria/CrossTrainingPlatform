@@ -1,0 +1,18 @@
+namespace CrossTraining.Domain.Entities;
+
+/// <summary>Domeniu de antrenament (ex: matematica, limbi straine).</summary>
+public class Domain
+{
+    public int DomainId { get; set; }
+    public string DomainName { get; set; } = string.Empty;
+    public bool IsActive { get; set; } = true;
+
+    public int? GameId { get; set; }
+    public Game? Game { get; set; }
+
+    /// <summary>Jocurile care apartin acestui domeniu.</summary>
+    public ICollection<Game> Games { get; set; } = new List<Game>();
+
+    /// <summary>Legaturile catre utilizatori (many-to-many).</summary>
+    public ICollection<UserDomain> UserDomains { get; set; } = new List<UserDomain>();
+}

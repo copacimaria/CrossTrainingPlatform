@@ -1,0 +1,137 @@
+﻿@model X.PagedList.IPagedList<CrossTraining.Domain.Entities.AppClaim>
+@{
+    ViewData["Title"] = "Claim-uri";
+}
+
+<br /><br />
+
+<!-- Modale -->
+<div class="modal fade" id="createClaimModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog admin-modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Creare claim:</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contentAddClaim"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editClaimModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog admin-modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editeaza claim-ul:</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contentEditClaim"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteClaimModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog admin-modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmare stergere claim</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contentDeleteClaim"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detailsClaimModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog admin-modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detalii claim</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contentDetailsClaim"></div>
+        </div>
+    </div>
+</div>
+
+@if (User.HasClaim(c => c.Value == "CreateClaim"))
+{
+    <div class="d-flex justify-content-between align-items-center admin-header">
+        <h1 class="mb-0">Claim-uri</h1>
+        <button onclick="loadCreateClaim()" data-bs-toggle="modal" data-bs-target="#createClaimModal"
+                class="btn btn-dark fw-bold">
+            <i class="bi bi-plus-circle me-2"></i> Creeaza un nou claim
+        </button>
+    </div>
+}
+
+<div class="col">
+    <!-- Filtre -->
+    <div class="d-flex mb-3">
+        <form method="get" class="d-flex gap-3 admin-filter-form">
+            <div>
+                <label for="claimSearch" class="form-label mb-0 admin-filter-label">Cauta un claim:</label>
+                <input type="text" id="claimSearch" name="claimSearch" placeholder="Cauta dupa nume"
+                       class="form-control form-control-sm admin-filter-input"
+                       value="@(ViewBag.SelectedClaim ?? "")" />
+            </div>
+            <button type="button" class="btn btn-success mt-4 fw-bold" onclick="searchClaim()">
+                <i class="bi bi-search"></i> Filtreaza
+            </button>
+            <button type="button" class="btn btn-danger mt-4 fw-bold" onclick="resetClaimFilters()">
+                <i class="bi bi-x-circle"></i> Reseteaza
+            </button>
+        </form>
+    </div>
+
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th class="fw-bold">Nume claim</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null)
+            {
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.ClaimName</td>
+                        <td>
+                            @if (User.HasClaim(c => c.Value == "ViewClaim"))
+                            {
+                                <button data-bs-toggle="modal" data-bs-target="#detailsClaimModal"
+                                        onclick="viewRolesInClaim(@item.ClaimId)" class="view-link">
+                                    <i class="bi bi-eye-fill"></i>
+                                </button>
+                            }
+                            @if (User.HasClaim(c => c.Value == "EditClaim"))
+                            {
+                                <button data-bs-toggle="modal" data-bs-target="#editClaimModal"
+                                        onclick="loadEditClaim(@item.ClaimId)" class="edit-link">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                            }
+                            @if (User.HasClaim(c => c.Value == "DeleteClaim"))
+                            {
+                                <button data-bs-toggle="modal" data-bs-target="#deleteClaimModal"
+                                        onclick="loadDeleteClaim(@item.ClaimId)" class="delete-link">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <div class="pagination-container d-flex justify-content-center mb-5">
+        @Html.PagedListPager(Model, page => Url.Action("Index", "AppClaims", new { page, claimSearch = ViewBag.SelectedClaim }))
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/appclaims.js" asp-append-version="true"></script>
+}

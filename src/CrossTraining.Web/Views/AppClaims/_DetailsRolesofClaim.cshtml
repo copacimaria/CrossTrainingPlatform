@@ -1,0 +1,23 @@
+﻿@model CrossTraining.Domain.Entities.AppClaim
+
+<dl class="row admin-detail-list">
+    <dt>Claim-ul:</dt>
+    <dd>@Model.ClaimName</dd>
+
+    <dt>Rolurile asociate acestui claim:</dt>
+    <dd>
+        @if (Model.RoleClaims != null && Model.RoleClaims.Any())
+        {
+            <ul class="admin-role-list">
+                @foreach (var rc in Model.RoleClaims)
+                {
+                    <li>@(rc.Role?.RoleName ?? "-")</li>
+                }
+            </ul>
+        }
+        else
+        {
+            <span>Niciun rol asociat.</span>
+        }
+    </dd>
+</dl>

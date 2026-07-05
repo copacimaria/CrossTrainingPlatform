@@ -1,0 +1,93 @@
+﻿@model CrossTraining.Application.ViewModels.AppRolesClaimsViewModel
+@{
+    ViewData["Title"] = "Drepturi rol";
+}
+
+<br /><br />
+
+<!-- Modal adaugare drept -->
+<div class="modal fade" id="addClaimModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog admin-modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adaugare drepturi:</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contentAddClaim"></div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-left mt-4">
+    <a asp-action="Index" asp-controller="AppRoles" class="btn btn-link btn-lg">
+        <i class="bi bi-arrow-left"></i> Inapoi la roluri
+    </a>
+</div>
+
+<br />
+
+<div class="d-flex justify-content-between align-items-center admin-header admin-text-light">
+    <h1 class="mb-0">Rolul: @Model.Role.RoleName</h1>
+    @if (User.HasClaim(c => c.Value == "AddClaim"))
+    {
+        <button onclick="loadAddClaim('@Model.Role.RoleId')" data-bs-toggle="modal" data-bs-target="#addClaimModal"
+                class="btn btn-dark fw-bold">
+            <i class="bi bi-plus-circle me-2"></i> Adauga drepturi in rol
+        </button>
+    }
+</div>
+
+<div class="col admin-text-light">
+    <!-- Filtre -->
+    <div class="d-flex mb-3 gap-3 admin-filter-form">
+        <div>
+            <input type="hidden" id="roleId" value="@Model.Role.RoleId" />
+            <label for="claimSearchInRole" class="form-label mb-0 admin-filter-label">Cauta claim:</label>
+            <input type="text" id="claimSearchInRole" name="claimSearchInRole" placeholder="Cauta dupa nume"
+                   class="form-control form-control-sm admin-filter-input"
+                   value="@(ViewBag.SelectedClaim ?? "")" />
+        </div>
+        <button type="button" class="btn btn-success mt-4 fw-bold" onclick="searchClaimInRole()">
+            <i class="bi bi-search"></i> Filtreaza
+        </button>
+        <button type="button" class="btn btn-danger mt-4 fw-bold" onclick="resetClaimInRoleFilters()">
+            <i class="bi bi-x-circle"></i> Reseteaza
+        </button>
+    </div>
+
+    <table class="table table-hover admin-text-light">
+        <thead>
+            <tr>
+                <th class="fw-bold">Nume drept</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Claims != null)
+            {
+                foreach (var item in Model.Claims)
+                {
+                    <tr>
+                        <td>@item.ClaimName</td>
+                        <td>
+                            @if (User.HasClaim(c => c.Value == "RemoveClaim"))
+                            {
+                                <button onclick="loadRemoveClaim('@item.ClaimId', '@Model.Role.RoleId')" class="delete-link">
+                                    <i class="bi bi-dash-circle"></i>
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <div class="pagination-container d-flex justify-content-center mb-5">
+        @Html.PagedListPager(Model.Claims, page => Url.Action("Details", "AppRoles", new { id = Model.Role.RoleId, claimSearchInRole = ViewBag.SelectedClaim, page }))
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/approles-details.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,16 @@
+﻿@model CrossTraining.Domain.Entities.AppClaim
+@Html.AntiForgeryToken()
+
+<h1 class="delete-heading">Sunteti sigur ca vreti sa stergeti acest claim?</h1>
+<hr />
+
+<dl class="row admin-detail-list">
+    <dt class="col-sm-6">Numele claim-ului:</dt>
+    <dd class="col-sm-6">@Model.ClaimName</dd>
+</dl>
+
+<br />
+
+<div class="d-flex justify-content-center">
+    <button type="button" class="btn btn-danger" onclick="postDeleteClaim('@Model.ClaimId')">Confirma stergerea</button>
+</div>

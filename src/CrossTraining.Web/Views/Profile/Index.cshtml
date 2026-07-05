@@ -1,0 +1,33 @@
+﻿@model CrossTraining.Application.ViewModels.ProfileViewModel
+@{
+    ViewData["Title"] = "Profil";
+}
+
+<div class="profile-page">
+    <div class="profile-card">
+        <i class="bi bi-person-circle profile-icon"></i>
+
+        <h2 class="profile-name">@Model.FullName</h2>
+        <p class="profile-email">@Model.Email</p>
+
+        @if (TempData["Success"] != null)
+        {
+            <div class="profile-success">@TempData["Success"]</div>
+        }
+
+        <div class="profile-info">
+            <p><strong>Rol:</strong> @Model.Role</p>
+            <p><strong>Domenii selectate:</strong> @Model.Domains</p>
+        </div>
+
+        <ul class="profile-links">
+            <li><a asp-controller="Profile" asp-action="ChangeDomain">Schimbare domenii</a></li>
+            <li><a asp-controller="Profile" asp-action="ChangePassword">Schimbare parola</a></li>
+            <li>
+                <form asp-controller="UserAuth" asp-action="Logout" method="post" class="profile-logout-form">
+                    <button type="submit" class="profile-logout-btn">Delogare</button>
+                </form>
+            </li>
+        </ul>
+    </div>
+</div>

@@ -1,0 +1,30 @@
+﻿@model CrossTraining.Domain.Entities.Game
+@Html.AntiForgeryToken()
+
+<div class="modal-form-group mb-3">
+    <label asp-for="GameName" class="control-label fw-bold">Nume joc:</label>
+    <input asp-for="GameName" class="form-control custom-input" />
+</div>
+
+<div class="modal-form-group mb-3">
+    <label asp-for="DomainId" class="control-label fw-bold game-form-label">Domain:</label>
+    <select asp-for="DomainId" class="form-control" id="domainEdit" asp-items="ViewBag.Domains">
+        <option value="">-- Selecteaza domeniul --</option>
+    </select>
+</div>
+
+<div class="modal-form-group">
+    <label asp-for="Description">Descriere:</label>
+    <textarea asp-for="Description" id="descriptionEdit" maxlength="300" rows="3"></textarea>
+</div>
+
+<div class="modal-form-group mb-3">
+    <label asp-for="DownloadLink" class="control-label fw-bold">Link download:</label>
+    <input asp-for="DownloadLink" class="form-control custom-input" />
+</div>
+
+<br />
+
+<div class="d-flex justify-content-center">
+    <button type="button" onclick="submitEditGame(@Model.GameId)" class="btn btn-success">Salveaza</button>
+</div>

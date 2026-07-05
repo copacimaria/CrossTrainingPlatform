@@ -1,0 +1,19 @@
+﻿@model CrossTraining.Domain.Entities.AppRole
+@Html.AntiForgeryToken()
+
+<div class="row justify-content-center">
+    <div class="col-sm-8">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="modal-form-group mb-3">
+            <label asp-for="RoleName" class="control-label fw-bold admin-form-label">Nume rol:</label>
+            <input asp-for="RoleName" id="roleNameCreate" class="form-control" />
+        </div>
+
+        <br />
+
+        <div class="d-flex justify-content-center">
+            <button type="button" onclick="createRole()" class="btn btn-success">Adauga</button>
+        </div>
+    </div>
+</div>

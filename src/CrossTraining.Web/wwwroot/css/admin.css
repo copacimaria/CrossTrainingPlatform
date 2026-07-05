@@ -1,0 +1,64 @@
+/* Stiluri pentru zona de administrare (AppRoles, AppClaims).
+   Extrase din atributele style= inline ale view-urilor. */
+
+.admin-modal-dialog {
+    width: 40rem;
+}
+
+.admin-header {
+    padding: 0.5rem;
+    margin-right: 1rem;
+}
+
+.admin-heading {
+    color: white;
+}
+
+.admin-text-light {
+    color: white;
+}
+
+.admin-form-label {
+    font-size: 25px;
+}
+
+.admin-filter-form {
+    margin-left: 0.5rem;
+    margin-right: 1rem;
+}
+
+.admin-filter-label {
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.admin-filter-input {
+    width: 12.5rem;
+    color: black;
+}
+
+.admin-detail-list {
+    text-align: left;
+    margin-left: 0;
+    font-size: 1rem;
+}
+
+.admin-role-list {
+    padding-left: 20px;
+    margin: 0;
+}
+
+.delete-heading {
+    margin-top: 5px;
+}
+
+/* Dropdown-ul de autocomplete la adaugarea unui drept in rol */
+.addclaim-role-line {
+    font-size: 1.5rem;
+}
+
+.addclaim-results {
+    max-height: 200px;
+    max-width: 19rem;
+    overflow-y: auto;
+}

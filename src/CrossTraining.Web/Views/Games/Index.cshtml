@@ -1,0 +1,126 @@
+﻿@model CrossTraining.Application.ViewModels.GamesViewModel
+@{
+    ViewData["Title"] = "Games";
+}
+
+<!-- Modale -->
+<div class="modal fade" id="createGameModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog game-modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Creare joc:</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contentAddGame"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editGameModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog game-modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editeaza joc:</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contentEditGame"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteGameModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog game-modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contentDeleteGame"></div>
+        </div>
+    </div>
+</div>
+
+<h2 class="games-title">Available Games</h2>
+
+<div class="games-grid">
+
+    @foreach (var game in Model.AllGames.Where(g => g.IsActive))
+    {
+        bool isInSelected = Model.GamesForSelectedDomains.Any(g => g.GameId == game.GameId);
+
+        <div class="game-card flip-card" data-expanded="false">
+            <div class="flip-card-inner">
+                <!-- FRONT -->
+                <div class="flip-card-front">
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <div class="card-actions">
+                            <button data-bs-toggle="modal" data-bs-target="#editGameModal"
+                                    onclick="event.stopPropagation(); loadEditgame(@game.GameId)"
+                                    class="edit-link">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <button data-bs-toggle="modal" data-bs-target="#deleteGameModal"
+                                    onclick="event.stopPropagation(); loadDeleteGame(@game.GameId)"
+                                    class="delete-link">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(game.DownloadLink))
+                    {
+                        <a href="@game.DownloadLink" target="_blank" class="download-btn">
+                            <i class="bi bi-download"></i>
+                        </a>
+                    }
+
+                    <div class="game-name">@game.GameName</div>
+
+                    <div class="game-body">
+                        @if (game.Domain != null)
+                        {
+                            <p><strong>Domain:</strong> @game.Domain.DomainName</p>
+                        }
+                        else
+                        {
+                            <p><strong>Domain:</strong> Not assigned</p>
+                        }
+                    </div>
+                </div>
+
+                <!-- BACK -->
+                <div class="flip-card-back">
+                    <p class="game-description">
+                        @(string.IsNullOrEmpty(game.Description)
+                            ? "Fara descriere."
+                            : (game.Description.Length > 300
+                                ? game.Description.Substring(0, 300) + "..."
+                                : game.Description))
+                    </p>
+                </div>
+            </div>
+
+            @if (isInSelected)
+            {
+                <div class="suitable">
+                    <span>Suitable for your selection ✔</span>
+                </div>
+            }
+        </div>
+    }
+
+    @if (User.IsInRole("Admin"))
+    {
+        <div class="game-card add-game-card" onclick="loadCreateGame()"
+             data-bs-toggle="modal" data-bs-target="#createGameModal">
+            <div class="add-game-inner">
+                <i class="bi bi-plus-lg"></i>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="~/js/games.js" asp-append-version="true"></script>
+}

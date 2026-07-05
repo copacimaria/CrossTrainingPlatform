@@ -1,0 +1,28 @@
+﻿@model CrossTraining.Domain.Entities.TrainingDomain
+@{
+    ViewData["Title"] = "Edit Domain";
+}
+
+<h2>Edit Domain</h2>
+
+<form asp-action="Edit" asp-route-id="@Model.DomainId" method="post">
+    <input type="hidden" asp-for="DomainId" />
+
+    <div class="form-group">
+        <label>Domain Name</label>
+        <input asp-for="DomainName" />
+        <span asp-validation-for="DomainName"></span>
+    </div>
+
+    <div class="form-group">
+        <label>Is Active</label>
+        <input asp-for="IsActive" type="checkbox" />
+    </div>
+
+    <button type="submit">Save Changes</button>
+    <a asp-action="Index">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

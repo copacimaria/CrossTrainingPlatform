@@ -1,0 +1,86 @@
+/* Stiluri pentru paginile de autentificare si profil.
+   Extrase din CSS-ul inline al view-urilor (ChangePassword, ChangeDomain, Login). */
+
+.form-errors {
+    color: red;
+    margin-bottom: 10px;
+}
+
+.field-error {
+    color: red;
+}
+
+/* Card generic pentru formulare auth/profil */
+.auth-card {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.auth-title {
+    color: white;
+    text-align: center;
+}
+
+.auth-success {
+    color: lime;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.auth-back-link {
+    text-align: center;
+    margin-top: 10px;
+}
+
+.auth-back-link a {
+    color: cadetblue;
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+.auth-input {
+    color: white;
+    background: #222;
+}
+
+.auth-submit {
+    width: 100%;
+    margin-top: 10px;
+}
+
+/* Lista de checkbox-uri pentru selectarea domeniilor (many-to-many) */
+.domain-checkbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.domain-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+/* Logout stilizat ca link in cardul de profil */
+.profile-logout-form {
+    margin: 0;
+    padding: 0;
+}
+
+.profile-logout-btn {
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+}
+
+.profile-success {
+    color: lime;
+    margin-bottom: 10px;
+    text-align: center;
+}

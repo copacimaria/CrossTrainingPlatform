@@ -1,0 +1,45 @@
+﻿@model CrossTraining.Application.ViewModels.LoginViewModel
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="page-wrapper">
+    <div class="login-container">
+        <h2>Login</h2>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="form-errors">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@error.ErrorMessage</div>
+                }
+            </div>
+        }
+
+        <form asp-controller="UserAuth" asp-action="Login" method="post">
+            <div class="form-group">
+                <label>Email</label>
+                <input asp-for="Email" />
+                <span asp-validation-for="Email"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <input asp-for="Password" type="password" />
+                <span asp-validation-for="Password"></span>
+            </div>
+
+            <button type="submit" class="login-btn">Login</button>
+
+            <p class="register-link">
+                Don't have an account?
+                <a asp-controller="UserAuth" asp-action="Register">Create one</a>
+            </p>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

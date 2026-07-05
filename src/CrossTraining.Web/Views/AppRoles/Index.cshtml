@@ -1,0 +1,125 @@
+﻿@model X.PagedList.IPagedList<CrossTraining.Domain.Entities.AppRole>
+@{
+    ViewData["Title"] = "Roluri";
+}
+
+<br /><br />
+
+<!-- Modale -->
+<div class="modal fade" id="createRoleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog admin-modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Creare rol:</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contentAddRole"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editRoleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog admin-modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editeaza rol:</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contentEditRole"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteRoleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog admin-modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmare stergere rol:</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contentDeleteRole"></div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center admin-header">
+    <h1 class="mb-0 admin-heading">Roluri</h1>
+    @if (User.HasClaim(c => c.Value == "CreateRoles"))
+    {
+        <button onclick="loadCreateRole()" data-bs-toggle="modal" data-bs-target="#createRoleModal"
+                class="btn btn-dark fw-bold">
+            <i class="bi bi-plus-circle me-2"></i> Creeaza un rol nou
+        </button>
+    }
+</div>
+
+<div class="col admin-text-light">
+    <!-- Filtre -->
+    <div class="d-flex mb-3">
+        <form method="get" class="d-flex gap-3 admin-filter-form">
+            <div>
+                <label for="RoleSearch" class="form-label mb-0 admin-filter-label">Cauta rolul:</label>
+                <input type="text" id="RoleSearch" name="RoleSearch" placeholder="Cauta dupa nume"
+                       class="form-control form-control-sm admin-filter-input"
+                       value="@(ViewBag.SelectedRole ?? "")" />
+            </div>
+            <button type="button" class="btn btn-success mt-4 fw-bold" onclick="searchRole()">
+                <i class="bi bi-search"></i> Filtreaza
+            </button>
+            <button type="button" class="btn btn-danger mt-4 fw-bold" onclick="resetRoleFilters()">
+                <i class="bi bi-x-circle"></i> Reseteaza
+            </button>
+        </form>
+    </div>
+
+    <table class="table table-hover admin-text-light">
+        <thead>
+            <tr>
+                <th class="fw-bold">Nume rol</th>
+                <th class="fw-bold">Drepturi din rol</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null)
+            {
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.RoleName</td>
+                        <td>
+                            <a asp-controller="AppRoles" asp-action="Details" asp-route-id="@item.RoleId"
+                               class="btn btn-info btn-sm fw-bold">
+                                <i class="bi bi-plus-circle"></i> Drepturi
+                            </a>
+                        </td>
+                        <td>
+                            @if (User.HasClaim(c => c.Value == "EditRoles"))
+                            {
+                                <button data-bs-toggle="modal" data-bs-target="#editRoleModal"
+                                        onclick="loadEditRole(@item.RoleId)" class="edit-link">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                            }
+                            @if (User.HasClaim(c => c.Value == "DeleteRoles"))
+                            {
+                                <button data-bs-toggle="modal" data-bs-target="#deleteRoleModal"
+                                        onclick="loadDeleteRole(@item.RoleId)" class="delete-link">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <div class="pagination-container d-flex justify-content-center mb-5">
+        @Html.PagedListPager(Model, page => Url.Action("Index", "AppRoles", new { page, RoleSearch = ViewBag.SelectedRole }))
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/approles.js" asp-append-version="true"></script>
+}

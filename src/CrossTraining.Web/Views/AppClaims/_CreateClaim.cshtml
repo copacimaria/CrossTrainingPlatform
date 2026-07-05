@@ -1,0 +1,20 @@
+﻿@model CrossTraining.Domain.Entities.AppClaim
+@Html.AntiForgeryToken()
+
+<div class="row justify-content-center">
+    <div class="col-sm-8">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="modal-form-group mb-3">
+            <label asp-for="ClaimName" class="control-label">Numele claim-ului:</label>
+            <input asp-for="ClaimName" id="claimNameCreate" class="form-control" />
+            <span asp-validation-for="ClaimName" class="text-danger"></span>
+        </div>
+
+        <br />
+
+        <div class="d-flex justify-content-center">
+            <button type="button" onclick="createClaim()" class="btn btn-success">Adauga</button>
+        </div>
+    </div>
+</div>

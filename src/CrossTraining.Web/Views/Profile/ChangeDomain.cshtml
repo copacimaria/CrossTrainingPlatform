@@ -1,0 +1,45 @@
+﻿@model CrossTraining.Application.ViewModels.ChangeDomainViewModel
+@{
+    ViewData["Title"] = "Schimbare domenii";
+}
+
+<div class="page-wrapper">
+    <div class="auth-card">
+        <h2 class="auth-title">Change Domains</h2>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="form-errors">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@error.ErrorMessage</div>
+                }
+            </div>
+        }
+
+        <form asp-controller="Profile" asp-action="ChangeDomain" method="post">
+            <div class="form-group">
+                <label>Selecteaza unul sau mai multe domenii:</label>
+
+                <div class="domain-checkbox-list">
+                    @foreach (var d in Model.AvailableDomains)
+                    {
+                        <label class="domain-checkbox-item">
+                            <input type="checkbox"
+                                   name="SelectedDomainIds"
+                                   value="@d.DomainId"
+                                   checked="@(Model.SelectedDomainIds.Contains(d.DomainId))" />
+                            <span>@d.DomainName</span>
+                        </label>
+                    }
+                </div>
+            </div>
+
+            <button type="submit" class="login-btn auth-submit">Save</button>
+
+            <p class="login-link">
+                <a asp-controller="Profile" asp-action="Index">Inapoi la profil</a>
+            </p>
+        </form>
+    </div>
+</div>

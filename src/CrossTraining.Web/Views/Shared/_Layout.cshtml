@@ -1,0 +1,88 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Cross Training Platform</title>
+
+    <link rel="stylesheet" href="~/css/offlineBootstrap1-11-3.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/layout.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/games.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/CrossTraining.Web.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/bootstrap-icons-1.11.3/font/bootstrap-icons.css" asp-append-version="true" />
+    <link rel="stylesheet" type="text/css" href="~/css/toastify.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-glass mb-3 position-relative">
+            <div class="container-fluid d-flex justify-content-center align-items-center position-relative">
+
+                @if (User.Identity != null && User.Identity.IsAuthenticated)
+                {
+                    <button id="sidebarToggle" class="hamburger-btn me-3" aria-label="Toggle sidebar">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                }
+
+                <a class="navbar-brand site-title">Cross Training Platform</a>
+
+                <a asp-area="" asp-controller="Home" asp-action="Index" class="info-btn">
+                    <i class="bi bi-info-circle-fill nav-info-icon"></i>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar">
+        <button id="closeSidebar" class="close-btn">✕</button>
+        <ul>
+            <li><a href="@Url.Action("Index", "Profile")">Profile</a></li>
+            <li><a href="@Url.Action("DisplayGamesBasedOnDomain", "Games")">Games</a></li>
+
+            @if (User.IsInRole("Admin"))
+            {
+                <li class="has-submenu">
+                    <a href="#" id="adminToggle" class="admin-toggle">
+                        Admin Settings <span class="arrow">&#9662;</span>
+                    </a>
+                    <ul id="adminSubmenu" class="submenu">
+                        <li><a href="@Url.Action("Index", "AppRoles")">App Roles</a></li>
+                        <li><a href="@Url.Action("Index", "AppClaims")">App Claims</a></li>
+                        <li><a href="@Url.Action("Index", "Domain")">Domains</a></li>
+                    </ul>
+                </li>
+            }
+
+            @if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                <li>
+                    <form asp-controller="UserAuth" asp-action="Logout" method="post" class="sidebar-logout-form">
+                        <button type="submit" class="sidebar-logout-btn">Logout</button>
+                    </form>
+                </li>
+            }
+        </ul>
+    </div>
+
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script type="text/javascript" src="~/js/taostify.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/layout.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

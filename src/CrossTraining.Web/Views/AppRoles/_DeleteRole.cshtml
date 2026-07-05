@@ -1,0 +1,16 @@
+﻿@model CrossTraining.Domain.Entities.AppRole
+@Html.AntiForgeryToken()
+
+<h1 class="delete-heading">Sunteti sigur ca vreti sa stergeti acest rol?</h1>
+<hr />
+
+<dl class="row admin-detail-list">
+    <dt class="col-sm-4">Rolul:</dt>
+    <dd class="col-sm-8">@Model.RoleName</dd>
+</dl>
+
+<br />
+
+<div class="d-flex justify-content-center">
+    <button type="button" class="btn btn-danger" onclick="postDeleteRole('@Model.RoleId')">Confirma stergerea</button>
+</div>
