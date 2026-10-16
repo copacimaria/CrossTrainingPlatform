@@ -65,13 +65,13 @@ function loadAddClaim(id) {
 }
 
 async function addClaimFct(idRole) {
-    const claimToken = document.getElementById('selectedClaimToken').value;
-    if (!idRole || !claimToken) { alert('Selectati un claim!'); return; }
+    const claimId = document.getElementById('selectedClaimId').value;
+    if (!idRole || !claimId) { alert('Selectati un claim!'); return; }
 
     const response = await fetch('/AppRoles/AddClaim', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': getToken() },
-        body: `roleId=${encodeURIComponent(idRole)}&claimToken=${encodeURIComponent(claimToken)}`
+        body: `roleId=${encodeURIComponent(idRole)}&claimId=${encodeURIComponent(claimId)}`
     });
 
     const result = await parseJson(response);
@@ -83,38 +83,63 @@ async function addClaimFct(idRole) {
     }
 }
 
-// Cautare in dropdown-ul din modalul de adaugare (autocomplete pe claims disponibile).
-function searchClaim() {
-    const searchTerm = document.getElementById('claimSearch').value;
-    const allClaimsJson = document.getElementById('allClaimsJson').value;
-    const allClaims = JSON.parse(allClaimsJson);
+// Autocomplete pe claim-urile care mai pot fi adaugate rolului.
+// Filtrarea se face in baza de date: trimitem doar rolul si termenul cautat.
+let claimSearchTimer = null;
 
-    fetch('/AppRoles/SearchClaim', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ searchTerm, claims: allClaims })
-    })
-        .then(response => response.json())
-        .then(res => {
-            const results = document.getElementById('searchResults');
-            let list = '';
-            if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-                res.data.forEach(item => {
-                    list += `<li class="dropdown-item" data-token="${item.token}" onclick="selectClaim(this)">${item.claimName}</li>`;
-                });
-            } else {
-                list = '<li class="dropdown-item disabled">No results found</li>';
-            }
-            results.innerHTML = list;
-            results.style.display = 'block';
+function searchClaim() {
+    clearTimeout(claimSearchTimer);
+    claimSearchTimer = setTimeout(runClaimSearch, 200);
+}
+
+async function runClaimSearch() {
+    const results = document.getElementById('searchResults');
+    if (!results) return;
+
+    const term = document.getElementById('claimSearch').value;
+    const roleId = document.getElementById('addClaimRoleId').value;
+
+    let data = [];
+    try {
+        const response = await fetch(
+            `/AppRoles/SearchAvailableClaims?roleId=${encodeURIComponent(roleId)}&term=${encodeURIComponent(term)}`);
+        data = await response.json();
+    } catch (err) {
+        console.error(err);
+    }
+
+    renderClaimResults(results, data);
+}
+
+// Construit prin DOM, nu prin innerHTML: numele claim-ului vine din baza de date si
+// ar fi fost interpretat ca HTML daca il concatenam intr-un string.
+function renderClaimResults(results, data) {
+    results.replaceChildren();
+
+    if (!Array.isArray(data) || data.length === 0) {
+        const empty = document.createElement('li');
+        empty.className = 'dropdown-item disabled';
+        empty.textContent = 'No results found';
+        results.appendChild(empty);
+    } else {
+        data.forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'dropdown-item';
+            li.dataset.claimId = item.claimId;
+            li.textContent = item.claimName;
+            li.addEventListener('click', () => selectClaim(li));
+            results.appendChild(li);
         });
+    }
+
+    results.style.display = 'block';
 }
 
 function selectClaim(li) {
     document.getElementById('claimSearch').value = li.textContent;
-    document.getElementById('selectedClaimToken').value = li.getAttribute('data-token');
+    document.getElementById('selectedClaimId').value = li.dataset.claimId;
     const results = document.getElementById('searchResults');
-    results.innerHTML = '';
+    results.replaceChildren();
     results.style.display = 'none';
 }
 

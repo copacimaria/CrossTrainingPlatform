@@ -1,8 +1,11 @@
 @using CrossTraining.Web
-@using CrossTraining.Domain.Entities
-@using CrossTraining.Application.ViewModels
+@using CrossTraining.Web.Models
+@using CrossTraining.Web.Extensions
+@using CrossTraining.Application.Authorization
 @using CrossTraining.Application.DTOs
 @using X.PagedList
 @using X.PagedList.Mvc.Core
+@* CrossTraining.Domain.Entities nu mai este importat intentionat: view-urile
+   lucreaza cu DTO-uri si modele de formular, nu cu entitati de persistenta. *@
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @addTagHelper *, X.PagedList.Mvc.Core

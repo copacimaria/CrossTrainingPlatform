@@ -1,97 +1,97 @@
-using System.Text;
-using CrossTraining.Application.DTOs;
-using CrossTraining.Application.ViewModels;
-using CrossTraining.Application.Interfaces;
-using CrossTraining.Domain.Entities;
-using Microsoft.AspNetCore.Authorization;
+using CrossTraining.Application.Authorization;
+using CrossTraining.Application.Features.Claims;
+using CrossTraining.Application.Features.Roles;
+using CrossTraining.Web.Extensions;
+using CrossTraining.Web.Models;
+using CrossTraining.Web.Security;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using X.PagedList.Extensions;
 
 namespace CrossTraining.Web.Controllers;
 
-[Authorize(Roles = "Admin")]
+[HasPermission(Permissions.Roles.View)]
 public class AppRolesController : Controller
 {
     private const int PageSize = 13;
-    private readonly IRoleService _roles;
-    private readonly IClaimService _claims;
 
-    public AppRolesController(IRoleService roles, IClaimService claims)
+    private readonly ISender _sender;
+
+    public AppRolesController(ISender sender)
     {
-        _roles = roles;
-        _claims = claims;
+        _sender = sender;
     }
 
     public async Task<IActionResult> Index(int? page, string roleSearch)
     {
-        int pageNumber = page ?? 1;
-        var roles = await _roles.GetAllAsync();
-        IEnumerable<AppRole> activeRoles = roles.Where(r => r.IsActive);
-
-        if (!string.IsNullOrEmpty(roleSearch))
-        {
-            activeRoles = activeRoles
-                .Where(r => r.RoleName.Contains(roleSearch, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-        }
-
-        var paged = activeRoles.OrderBy(r => r.RoleName).ToPagedList(pageNumber, PageSize);
-        return View(paged);
+        // Filtrarea pe IsActive nu se mai scrie aici: o face filtrul global de
+        // soft-delete. Paginarea si cautarea coboara in baza de date.
+        var result = await _sender.Send(new SearchRolesQuery(roleSearch, Math.Max(page ?? 1, 1), PageSize));
+        return View(result.ToPagedList());
     }
 
     public async Task<IActionResult> Details(int id)
     {
-        var role = await _roles.GetByIdAsync(id);
+        var role = await _sender.Send(new GetRoleQuery(id));
         if (role == null)
             return NotFound();
 
-        var claims = await _roles.GetClaimsForRoleAsync(id);
+        var claims = await _sender.Send(new GetRoleClaimsQuery(id));
 
-        var vm = new AppRolesClaimsViewModel
+        return View(new RoleClaimsViewModel
         {
             Role = role,
             Claims = claims.ToPagedList(1, claims.Count == 0 ? 1 : claims.Count)
-        };
-
-        return View(vm);
+        });
     }
 
-    public IActionResult Create() => PartialView("_CreateRole");
+    [HttpGet]
+    [HasPermission(Permissions.Roles.Manage)]
+    public IActionResult Create() => PartialView("_CreateRole", new RoleFormModel());
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("RoleName")] AppRole appRole)
+    [HasPermission(Permissions.Roles.Manage)]
+    public async Task<IActionResult> Create(RoleFormModel form)
     {
-        if (string.IsNullOrWhiteSpace(appRole.RoleName))
-            return Json(new { success = false, errors = new[] { "Rolul trebuie sa aibe un nume!" } });
+        if (!ModelState.IsValid)
+            return Json(new { success = false, errors = ModelState.ErrorMessages() });
 
-        await _roles.CreateAsync(appRole.RoleName);
-        return Json(new { success = true });
+        var result = await _sender.Send(new CreateRoleCommand(form.RoleName));
+        return result.ToJsonResult();
     }
 
+    [HttpGet]
+    [HasPermission(Permissions.Roles.Manage)]
     public async Task<IActionResult> Edit(int id)
     {
-        var role = await _roles.GetByIdAsync(id);
+        var role = await _sender.Send(new GetRoleQuery(id));
         if (role == null)
             return Json(new { success = false, message = "Rolul nu exista." });
 
-        return PartialView("_EditRole", role);
+        return PartialView("_EditRole", new RoleFormModel
+        {
+            RoleId = role.RoleId,
+            RoleName = role.RoleName
+        });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, string roleName)
+    [HasPermission(Permissions.Roles.Manage)]
+    public async Task<IActionResult> Edit(int id, RoleFormModel form)
     {
-        if (string.IsNullOrWhiteSpace(roleName))
-            return Json(new { success = false, errors = new[] { "Completati numele rolului!" } });
+        if (!ModelState.IsValid)
+            return Json(new { success = false, errors = ModelState.ErrorMessages() });
 
-        await _roles.UpdateNameAsync(id, roleName);
-        return Json(new { success = true });
+        var result = await _sender.Send(new RenameRoleCommand(id, form.RoleName));
+        return result.ToJsonResult();
     }
 
+    [HasPermission(Permissions.Roles.Manage)]
     public async Task<IActionResult> Delete(int id)
     {
-        var role = await _roles.GetByIdAsync(id);
+        var role = await _sender.Send(new GetRoleQuery(id));
         if (role == null)
             return Json(new { success = false, message = "Rolul nu exista." });
 
@@ -100,72 +100,61 @@ public class AppRolesController : Controller
 
     [HttpPost, ActionName("DeleteConfirmed")]
     [ValidateAntiForgeryToken]
+    [HasPermission(Permissions.Roles.Manage)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
-        await _roles.SoftDeleteAsync(id);
-        return Json(new { success = true });
-    }
-
-    // ------------------- ADD / REMOVE CLAIM -------------------
-    public async Task<IActionResult> AddClaim(int id)
-    {
-        var role = await _roles.GetByIdAsync(id);
-        if (role == null)
-            return Json(new { success = false, message = "Rolul nu a fost gasit." });
-
-        var allClaims = await _claims.GetAllAsync();
-        var existingClaimIds = await _roles.GetClaimIdsForRoleAsync(id);
-
-        var normalClaims = allClaims
-            .Where(c => !existingClaimIds.Contains(c.ClaimId))
-            .Select(c => new ClaimDto
-            {
-                Token = Convert.ToBase64String(Encoding.UTF8.GetBytes(c.ClaimId.ToString())),
-                ClaimName = c.ClaimName
-            })
-            .ToList();
-
-        var vm = new AppRolesClaimsViewModel
-        {
-            Role = role,
-            NormalClaims = normalClaims
-        };
-
-        return PartialView("_addClaimInRole", vm);
-    }
-
-    [HttpPost]
-    public IActionResult SearchClaim([FromBody] SearchClaimRequest request)
-    {
-        if (string.IsNullOrEmpty(request.SearchTerm))
-            return Json(new { success = false, message = "Search field is empty." });
-
-        var filtered = request.Claims
-            .Where(c => c.ClaimName.Contains(request.SearchTerm, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
-        return Json(new { success = true, data = filtered });
+        var result = await _sender.Send(new DeactivateRoleCommand(id));
+        return result.ToJsonResult();
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddClaim(int roleId, string claimToken)
+    [HasPermission(Permissions.Roles.Manage)]
+    public async Task<IActionResult> Reactivate(int id)
     {
-        string idString;
-        try { idString = Encoding.UTF8.GetString(Convert.FromBase64String(claimToken)); }
-        catch { return Json(new { success = false, errors = new[] { "Token invalid!" } }); }
+        var result = await _sender.Send(new ReactivateRoleCommand(id));
+        return result.ToJsonResult();
+    }
 
-        if (!int.TryParse(idString, out var claimId))
-            return Json(new { success = false, errors = new[] { "Token invalid!" } });
+    // ------------------- ACORDARE / REVOCARE DREPT -------------------
+    [HttpGet]
+    [HasPermission(Permissions.Roles.Manage)]
+    public async Task<IActionResult> AddClaim(int id)
+    {
+        var role = await _sender.Send(new GetRoleQuery(id));
+        if (role == null)
+            return Json(new { success = false, message = "Rolul nu a fost gasit." });
 
-        await _roles.AddClaimAsync(roleId, claimId);
-        return Json(new { success = true });
+        return PartialView("_addClaimInRole", new RoleClaimsViewModel { Role = role });
+    }
+
+    /// <summary>
+    /// Autocomplete pentru drepturile care mai pot fi adaugate rolului.
+    ///
+    /// Varianta anterioara primea lista completa din body-ul clientului si o filtra
+    /// server-side, adica serverul avea incredere in datele pe care tot clientul i le
+    /// trimitea. Acum lista se construieste in baza de date, pornind de la rol.
+    /// </summary>
+    [HttpGet]
+    [HasPermission(Permissions.Roles.Manage)]
+    public async Task<IActionResult> SearchAvailableClaims(int roleId, string? term)
+        => Json(await _sender.Send(new SearchAvailableClaimsQuery(roleId, term)));
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [HasPermission(Permissions.Roles.Manage)]
+    public async Task<IActionResult> AddClaim(int roleId, int claimId)
+    {
+        var result = await _sender.Send(new GrantClaimToRoleCommand(roleId, claimId));
+        return result.ToJsonResult();
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
+    [HasPermission(Permissions.Roles.Manage)]
     public async Task<IActionResult> RemoveClaim(int roleId, int claimId)
     {
-        await _roles.RemoveClaimAsync(roleId, claimId);
-        return Json(new { success = true });
+        var result = await _sender.Send(new RevokeClaimFromRoleCommand(roleId, claimId));
+        return result.ToJsonResult();
     }
 }

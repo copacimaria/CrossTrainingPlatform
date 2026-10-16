@@ -12,7 +12,11 @@ public class AppRoleConfiguration : IEntityTypeConfiguration<AppRole>
         builder.HasKey(r => r.RoleId);
 
         builder.Property(r => r.RoleId).HasColumnName("RoleId");
-        builder.Property(r => r.RoleName).HasColumnName("RoleName").HasColumnType("nvarchar(max)").IsRequired();
+        builder.Property(r => r.RoleName).HasColumnName("RoleName").HasMaxLength(100).IsRequired();
         builder.Property(r => r.IsActive).HasColumnName("IsActive");
+
+        // Rolurile de sistem (User, Admin) sunt recunoscute dupa nume, deci numele trebuie
+        // sa fie unic - inclusiv fata de rolurile dezactivate.
+        builder.HasIndex(r => r.RoleName).IsUnique().HasDatabaseName("UX_AppRole_RoleName");
     }
 }

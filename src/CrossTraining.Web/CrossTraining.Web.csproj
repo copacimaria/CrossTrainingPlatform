@@ -1,14 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>CrossTraining.Web</RootNamespace>
+    <UserSecretsId>crosstraining-web-a1c4f7e2</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="X.PagedList.Mvc.Core" Version="10.5.7" />
+    <!-- X.PagedList este folosit direct (ToPagedList, IPagedList), deci se declara
+         explicit, nu se ia transitiv prin pachetul de MVC. -->
+    <PackageReference Include="X.PagedList" />
+    <PackageReference Include="X.PagedList.Mvc.Core" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,7 @@
 namespace CrossTraining.Domain.Entities;
 
 /// <summary>Domeniu de antrenament (ex: matematica, limbi straine).</summary>
-public class TrainingDomain
+public class TrainingDomain : ISoftDeletable
 {
     public int DomainId { get; set; }
     public string DomainName { get; set; } = string.Empty;

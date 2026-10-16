@@ -1,0 +1,141 @@
+# Stil de cod pentru CrossTrainingPlatform.
+# Regulile marcate "warning" sunt verificate la build (EnforceCodeStyleInBuild)
+# si, cum TreatWarningsAsErrors este activ, opresc build-ul.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+[*.{json,yml,yaml,csproj,props,targets,config}]
+indent_size = 2
+
+[*.{js,css,html,cshtml}]
+indent_size = 4
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.sql]
+indent_size = 4
+
+[*.cs]
+
+#### Organizarea using-urilor ####
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+csharp_using_directive_placement = outside_namespace:warning
+
+#### Namespace-uri ####
+# Tot codul foloseste deja file-scoped namespaces; il facem regula.
+csharp_style_namespace_declarations = file_scoped:warning
+
+#### this. redundant ####
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_property = false:warning
+dotnet_style_qualification_for_method = false:warning
+dotnet_style_qualification_for_event = false:warning
+
+#### Tipuri predefinite (string in loc de String) ####
+dotnet_style_predefined_type_for_locals_parameters_members = true:warning
+dotnet_style_predefined_type_for_member_access = true:warning
+
+#### var ####
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+#### Expression-bodied members ####
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+csharp_style_expression_bodied_accessors = true:suggestion
+csharp_style_expression_bodied_constructors = false:suggestion
+
+#### Sintaxa moderna ####
+csharp_style_pattern_matching_over_is_with_cast_check = true:warning
+csharp_style_pattern_matching_over_as_with_null_check = true:warning
+csharp_style_inlined_variable_declaration = true:suggestion
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+dotnet_style_object_initializer = true:suggestion
+dotnet_style_collection_initializer = true:suggestion
+dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_null_propagation = true:suggestion
+dotnet_style_prefer_conditional_expression_over_assignment = true:silent
+dotnet_style_prefer_conditional_expression_over_return = true:silent
+
+#### Imutabilitate ####
+dotnet_style_readonly_field = true:warning
+csharp_prefer_static_local_function = true:suggestion
+csharp_style_prefer_readonly_struct = true:suggestion
+
+#### Cod inutil ####
+dotnet_diagnostic.IDE0005.severity = warning   # using inutil
+dotnet_diagnostic.IDE0035.severity = warning   # cod inaccesibil
+dotnet_diagnostic.IDE0051.severity = warning   # membru privat nefolosit
+dotnet_diagnostic.IDE0052.severity = warning   # membru privat scris dar necitit
+dotnet_diagnostic.IDE0059.severity = warning   # atribuire inutila
+dotnet_diagnostic.IDE0060.severity = suggestion # parametru nefolosit
+
+#### Acolade ####
+csharp_prefer_braces = when_multiline:suggestion
+
+#### Conventii de numire ####
+# Ordinea conteaza: prima regula al carei symbol spec se potriveste castiga,
+# deci regulile specifice (const, static readonly) stau inaintea celor generale.
+
+dotnet_naming_rule.constants_are_pascal_case.severity = warning
+dotnet_naming_rule.constants_are_pascal_case.symbols = constants
+dotnet_naming_rule.constants_are_pascal_case.style = pascal
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.applicable_accessibilities = *
+dotnet_naming_symbols.constants.required_modifiers = const
+
+dotnet_naming_rule.static_readonly_fields_are_pascal_case.severity = warning
+dotnet_naming_rule.static_readonly_fields_are_pascal_case.symbols = static_readonly_fields
+dotnet_naming_rule.static_readonly_fields_are_pascal_case.style = pascal
+dotnet_naming_symbols.static_readonly_fields.applicable_kinds = field
+dotnet_naming_symbols.static_readonly_fields.applicable_accessibilities = *
+dotnet_naming_symbols.static_readonly_fields.required_modifiers = static, readonly
+
+dotnet_naming_rule.private_instance_fields_start_with_underscore.severity = warning
+dotnet_naming_rule.private_instance_fields_start_with_underscore.symbols = private_instance_fields
+dotnet_naming_rule.private_instance_fields_start_with_underscore.style = underscore_camel
+dotnet_naming_symbols.private_instance_fields.applicable_kinds = field
+dotnet_naming_symbols.private_instance_fields.applicable_accessibilities = private
+
+dotnet_naming_rule.interfaces_start_with_i.severity = warning
+dotnet_naming_rule.interfaces_start_with_i.symbols = interfaces
+dotnet_naming_rule.interfaces_start_with_i.style = prefix_i_pascal
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+
+dotnet_naming_rule.types_and_members_are_pascal_case.severity = warning
+dotnet_naming_rule.types_and_members_are_pascal_case.symbols = types_and_members
+dotnet_naming_rule.types_and_members_are_pascal_case.style = pascal
+dotnet_naming_symbols.types_and_members.applicable_kinds = class,struct,enum,property,method,event,namespace
+
+dotnet_naming_style.pascal.capitalization = pascal_case
+dotnet_naming_style.underscore_camel.required_prefix = _
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+dotnet_naming_style.prefix_i_pascal.required_prefix = I
+dotnet_naming_style.prefix_i_pascal.capitalization = pascal_case
+
+#### Analizoare care nu-si merita zgomotul in acest proiect ####
+# CA1848: LoggerMessage delegates - relevant abia la volum mare de log-uri.
+dotnet_diagnostic.CA1848.severity = none
+# CA1727/CA2254: template-uri de log - se reevalueaza cand intra Serilog (etapa 7).
+dotnet_diagnostic.CA2254.severity = suggestion
+
+[*.{cshtml,razor}]
+# Analizoarele de stil nu se aplica bine pe Razor.
+dotnet_analyzer_diagnostic.severity = none
+
+# Migrarile sunt generate de `dotnet ef`, nu scrise de mana. Le marcam ca atare, ca sa
+# nu fie tinute la regulile de stil ale codului scris - alternativa ar fi sa slabim
+# regulile pentru tot proiectul, sau sa reformatam manual la fiecare migrare noua.
+[**/Persistence/Migrations/*.cs]
+generated_code = true

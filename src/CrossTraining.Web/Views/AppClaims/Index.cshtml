@@ -1,4 +1,4 @@
-﻿@model X.PagedList.IPagedList<CrossTraining.Domain.Entities.AppClaim>
+@model IPagedList<ClaimDto>
 @{
     ViewData["Title"] = "Claim-uri";
 }
@@ -54,16 +54,23 @@
     </div>
 </div>
 
-@if (User.HasClaim(c => c.Value == "CreateClaim"))
-{
-    <div class="d-flex justify-content-between align-items-center admin-header">
-        <h1 class="mb-0">Claim-uri</h1>
+@{
+    // Butoanele urmeaza drepturile cerute de actiunile la care duc. Inainte, view-ul
+    // cauta claim-uri cu nume vechi ("CreateClaim", "EditClaim"...) pe care sistemul de
+    // drepturi nu le mai emite, deci un admin nou nu vedea niciun buton.
+    var canManage = User.HasPermission(Permissions.Claims.Manage);
+}
+
+<div class="d-flex justify-content-between align-items-center admin-header">
+    <h1 class="mb-0">Claim-uri</h1>
+    @if (canManage)
+    {
         <button onclick="loadCreateClaim()" data-bs-toggle="modal" data-bs-target="#createClaimModal"
                 class="btn btn-dark fw-bold">
             <i class="bi bi-plus-circle me-2"></i> Creeaza un nou claim
         </button>
-    </div>
-}
+    }
+</div>
 
 <div class="col">
     <!-- Filtre -->
@@ -88,6 +95,7 @@
         <thead>
             <tr>
                 <th class="fw-bold">Nume claim</th>
+                <th class="fw-bold">Stare</th>
                 <th></th>
             </tr>
         </thead>
@@ -96,28 +104,49 @@
             {
                 foreach (var item in Model)
                 {
-                    <tr>
+                    <tr class="@(item.IsActive ? "" : "admin-row-inactive")">
                         <td>@item.ClaimName</td>
                         <td>
-                            @if (User.HasClaim(c => c.Value == "ViewClaim"))
+                            @if (item.IsActive)
                             {
-                                <button data-bs-toggle="modal" data-bs-target="#detailsClaimModal"
-                                        onclick="viewRolesInClaim(@item.ClaimId)" class="view-link">
-                                    <i class="bi bi-eye-fill"></i>
-                                </button>
+                                <span class="badge bg-success">Activ</span>
                             }
-                            @if (User.HasClaim(c => c.Value == "EditClaim"))
+                            else
+                            {
+                                <span class="badge bg-secondary">Dezactivat</span>
+                            }
+                            @if (item.IsSystem)
+                            {
+                                <span class="badge bg-warning text-dark"
+                                      title="Folosit de aplicatie: nu poate fi redenumit sau dezactivat">Sistem</span>
+                            }
+                        </td>
+                        <td>
+                            <button data-bs-toggle="modal" data-bs-target="#detailsClaimModal"
+                                    onclick="viewRolesInClaim(@item.ClaimId)" class="view-link">
+                                <i class="bi bi-eye-fill"></i>
+                            </button>
+                            @if (canManage && !item.IsSystem)
                             {
                                 <button data-bs-toggle="modal" data-bs-target="#editClaimModal"
                                         onclick="loadEditClaim(@item.ClaimId)" class="edit-link">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
                             }
-                            @if (User.HasClaim(c => c.Value == "DeleteClaim"))
+                            @if (canManage && !item.IsSystem && item.IsActive)
                             {
                                 <button data-bs-toggle="modal" data-bs-target="#deleteClaimModal"
                                         onclick="loadDeleteClaim(@item.ClaimId)" class="delete-link">
                                     <i class="bi bi-trash3"></i>
+                                </button>
+                            }
+                            @if (canManage && !item.IsActive)
+                            {
+                                @* Listener delegat in appclaims.js, nu onclick: CSP-ul va putea
+                                   renunta la 'unsafe-inline' fara ca butonul asta sa se strice. *@
+                                <button type="button" class="reactivate-link" title="Reactiveaza"
+                                        data-reactivate-claim="@item.ClaimId" data-name="@item.ClaimName">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
                                 </button>
                             }
                         </td>

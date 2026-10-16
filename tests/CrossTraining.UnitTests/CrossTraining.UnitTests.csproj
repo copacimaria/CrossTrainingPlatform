@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>CrossTraining.UnitTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CrossTraining.Application\CrossTraining.Application.csproj" />
+    <ProjectReference Include="..\..\src\CrossTraining.Infrastructure\CrossTraining.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

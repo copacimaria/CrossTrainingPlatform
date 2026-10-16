@@ -1,8 +1,6 @@
-﻿@using CrossTraining.Domain.Entities
+@model SelectDomainViewModel
 @{
     ViewData["Title"] = "Select Domains";
-    var domainList = ViewBag.DomainList as List<TrainingDomain> ?? new List<TrainingDomain>();
-    var userId = (int)ViewBag.UserId;
 }
 
 <div class="page-wrapper">
@@ -11,11 +9,12 @@
         <p>Poti alege unul sau mai multe domenii.</p>
 
         <form asp-controller="Domain" asp-action="SaveUserDomain" method="post">
-            <input type="hidden" name="userId" value="@userId" />
+            @* Token semnat, emis la register. Inlocuieste vechiul userId trimis in clar. *@
+            <input type="hidden" asp-for="Token" />
 
             <div class="form-group">
                 <div class="domain-checkbox-list">
-                    @foreach (var domain in domainList)
+                    @foreach (var domain in Model.Domains)
                     {
                         <label class="domain-checkbox-item">
                             <input type="checkbox" name="domainIds" value="@domain.DomainId" />

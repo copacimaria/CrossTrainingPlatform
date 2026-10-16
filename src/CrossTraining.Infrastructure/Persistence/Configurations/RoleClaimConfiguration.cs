@@ -11,6 +11,12 @@ public class RoleClaimConfiguration : IEntityTypeConfiguration<RoleClaim>
     {
         builder.ToTable("AppClaim_AppRole");
         builder.HasKey(rc => new { rc.RoleId, rc.ClaimId });
+        builder.HasIndex(rc => rc.ClaimId).HasDatabaseName("IX_ClaimRole_ClaimId");
+
+        // Filtru pereche cu cel de pe AppRole si AppClaim. Fara el, o legatura catre un
+        // drept dezactivat ar fi in continuare returnata, dar cu navigatia goala - iar o
+        // proiectie de forma rc.Claim ar produce null in lista.
+        builder.HasQueryFilter(rc => rc.Role!.IsActive && rc.Claim!.IsActive);
 
         builder.Property(rc => rc.RoleId).HasColumnName("RoleId");
         builder.Property(rc => rc.ClaimId).HasColumnName("ClaimId");

@@ -100,12 +100,37 @@ async function postDeleteRole(roleId) {
     }
 }
 
+async function reactivateRole(roleId, roleName) {
+    if (!confirm(`Reactivati rolul "${roleName}"? Utilizatorii lui primesc inapoi drepturile rolului.`)) return;
+
+    const response = await fetch('/AppRoles/Reactivate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': getToken() },
+        body: `id=${encodeURIComponent(roleId)}`
+    });
+
+    const result = await parseJson(response);
+    if (result && result.success) {
+        sessionStorage.setItem('showToastRoleReactivated', 'true');
+        location.reload();
+    } else {
+        alert(result && result.errors ? result.errors.join("\n") : 'Eroare necunoscuta');
+    }
+}
+
+// Listener delegat, nu onclick in view (vezi appclaims.js).
+document.addEventListener('click', function (e) {
+    const button = e.target.closest('[data-reactivate-role]');
+    if (button) reactivateRole(button.dataset.reactivateRole, button.dataset.name);
+});
+
 // ---------------- TOASTS + CLEANUP ----------------
 document.addEventListener('DOMContentLoaded', function () {
     const toasts = [
         { key: 'showToastRoleCreated', text: 'Rolul a fost creat!', bg: 'grey' },
         { key: 'showToastRoleEdited', text: 'Rolul a fost editat!', bg: 'green' },
-        { key: 'showToastRoleDeleted', text: 'Rolul a fost sters!', bg: 'red' }
+        { key: 'showToastRoleDeleted', text: 'Rolul a fost sters!', bg: 'red' },
+        { key: 'showToastRoleReactivated', text: 'Rolul a fost reactivat!', bg: 'green' }
     ];
     toasts.forEach(t => {
         if (sessionStorage.getItem(t.key) === 'true') {

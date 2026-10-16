@@ -1,5 +1,5 @@
+using CrossTraining.Application.Abstractions.Persistence;
 using CrossTraining.Domain.Entities;
-using CrossTraining.Domain.Interfaces;
 using CrossTraining.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,39 +20,27 @@ public class AppUserRepository : IAppUserRepository
     public Task<AppUser?> GetByEmailAsync(string email)
         => _db.Users.FirstOrDefaultAsync(u => u.Email == email);
 
-    public async Task<int> CreateAsync(AppUser user)
-    {
-        _db.Users.Add(user);
-        await _db.SaveChangesAsync();
-        return user.UserId;
-    }
+    public Task<bool> EmailExistsAsync(string email)
+        => _db.Users.IgnoreQueryFilters().AnyAsync(u => u.Email == email);
 
-    public async Task UpdatePasswordHashAsync(int userId, string passwordHash)
-    {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == userId);
-        if (user == null)
-            return;
-
-        user.PasswordHash = passwordHash;
-        await _db.SaveChangesAsync();
-    }
-
-    public async Task SetUserDomainsAsync(int userId, IEnumerable<int> domainIds)
-    {
-        // Stergem legaturile existente si le inlocuim cu cele noi.
-        var existing = _db.UserDomains.Where(ud => ud.UserId == userId);
-        _db.UserDomains.RemoveRange(existing);
-
-        var distinctIds = domainIds.Distinct().ToList();
-        foreach (var domainId in distinctIds)
-            _db.UserDomains.Add(new UserDomain { UserId = userId, DomainId = domainId });
-
-        await _db.SaveChangesAsync();
-    }
+    public void Add(AppUser user) => _db.Users.Add(user);
 
     public async Task<List<int>> GetDomainIdsAsync(int userId)
         => await _db.UserDomains
                     .Where(ud => ud.UserId == userId)
                     .Select(ud => ud.DomainId)
                     .ToListAsync();
+
+    public async Task ReplaceUserDomainsAsync(int userId, IEnumerable<int> domainIds)
+    {
+        // IgnoreQueryFilters: inlocuim toate legaturile, inclusiv cele catre domenii
+        // dezactivate - altfel ar ramane randuri orfane pe care nimic nu le mai sterge.
+        var existing = await _db.UserDomains.IgnoreQueryFilters()
+                                            .Where(ud => ud.UserId == userId)
+                                            .ToListAsync();
+        _db.UserDomains.RemoveRange(existing);
+
+        foreach (var domainId in domainIds.Distinct())
+            _db.UserDomains.Add(new UserDomain { UserId = userId, DomainId = domainId });
+    }
 }

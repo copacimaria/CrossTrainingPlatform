@@ -1,73 +1,79 @@
-using CrossTraining.Application.Interfaces;
-using CrossTraining.Domain.Entities;
+using CrossTraining.Application.Authorization;
+using CrossTraining.Application.Features.Domains;
+using CrossTraining.Application.Features.Users;
+using CrossTraining.Web.Models;
+using CrossTraining.Web.Security;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CrossTraining.Web.Controllers;
 
+/// <summary>
+/// Administrarea domeniilor, plus pasul de alegere a domeniilor din fluxul de inregistrare.
+/// Lista se vede cu domains.view, modificarile cer domains.manage - la fel ca la drepturi si
+/// roluri. Cele doua actiuni din inregistrare sunt marcate explicit ca anonime.
+/// </summary>
+[HasPermission(Permissions.Domains.View)]
 public class DomainController : Controller
 {
-    private readonly IDomainService _domains;
-    private readonly IUserService _users;
+    private readonly ISender _sender;
+    private readonly RegistrationTokenProtector _registrationTokens;
 
-    public DomainController(IDomainService domains, IUserService users)
+    public DomainController(ISender sender, RegistrationTokenProtector registrationTokens)
     {
-        _domains = domains;
-        _users = users;
+        _sender = sender;
+        _registrationTokens = registrationTokens;
     }
 
     // ------------------- ADMIN CRUD -------------------
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Index()
-    {
-        var domains = await _domains.GetAllAsync();
-        return View(domains);
-    }
+        => View(await _sender.Send(new GetAllDomainsForAdminQuery()));
 
     [HttpGet]
-    [Authorize(Roles = "Admin")]
-    public IActionResult Create() => View("_createDomain");
+    [HasPermission(Permissions.Domains.Manage)]
+    public IActionResult Create() => View("_createDomain", new DomainFormModel());
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(TrainingDomain domain)
+    [HasPermission(Permissions.Domains.Manage)]
+    public async Task<IActionResult> Create(DomainFormModel form)
     {
         if (!ModelState.IsValid)
-            return View("_createDomain", domain);
+            return View("_createDomain", form);
 
-        await _domains.CreateAsync(domain);
+        await _sender.Send(new CreateDomainCommand(form.DomainName, form.IsActive));
         return RedirectToAction("Index");
     }
 
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(Permissions.Domains.Manage)]
     public async Task<IActionResult> Edit(int id)
     {
-        var domain = await _domains.GetByIdAsync(id);
+        var domain = await _sender.Send(new GetDomainQuery(id));
         if (domain == null)
             return NotFound();
 
-        return View("_editDomain", domain);
+        return View("_editDomain", DomainFormModel.FromDto(domain));
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, TrainingDomain domain)
+    [HasPermission(Permissions.Domains.Manage)]
+    public async Task<IActionResult> Edit(int id, DomainFormModel form)
     {
         if (!ModelState.IsValid)
-            return View("_editDomain", domain);
+            return View("_editDomain", form);
 
-        await _domains.UpdateAsync(id, domain);
+        await _sender.Send(new UpdateDomainCommand(id, form.DomainName, form.IsActive));
         return RedirectToAction("Index");
     }
 
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(Permissions.Domains.Manage)]
     public async Task<IActionResult> Delete(int id)
     {
-        var domain = await _domains.GetByIdAsync(id);
+        var domain = await _sender.Send(new GetDomainQuery(id));
         if (domain == null)
             return NotFound();
 
@@ -75,33 +81,45 @@ public class DomainController : Controller
     }
 
     [HttpPost, ActionName("Delete")]
-    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
+    [HasPermission(Permissions.Domains.Manage)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
-        await _domains.DeleteAsync(id);
+        await _sender.Send(new DeactivateDomainCommand(id));
         return RedirectToAction("Index");
     }
 
     // ------------------- SELECT DOMAIN (flow de inregistrare) -------------------
-    // Accesibil fara autentificare: face parte din procesul de creare cont.
+    // Se petrece intre register si login, deci nu exista utilizator autentificat.
+    // Identitatea vine dintr-un token semnat, emis la register - nu dintr-un id
+    // trimis de client, care ar permite oricui sa rescrie domeniile oricarui cont.
     [HttpGet]
-    public async Task<IActionResult> SelectDomain(int userId)
+    [AllowAnonymous]
+    public async Task<IActionResult> SelectDomain(string? token)
     {
-        var domains = await _domains.GetActiveAsync();
-        ViewBag.DomainList = domains;
-        ViewBag.UserId = userId;
-        return View();
+        if (_registrationTokens.Unprotect(token) == null)
+            return RedirectToAction("Register", "UserAuth");
+
+        return View(new SelectDomainViewModel
+        {
+            Token = token,
+            Domains = await _sender.Send(new GetActiveDomainsQuery())
+        });
     }
 
     [HttpPost]
+    [AllowAnonymous]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SaveUserDomain(int userId, List<int> domainIds)
+    public async Task<IActionResult> SaveUserDomain(string? token, List<int> domainIds)
     {
-        if (domainIds == null || domainIds.Count == 0)
-            return RedirectToAction("SelectDomain", new { userId });
+        var userId = _registrationTokens.Unprotect(token);
+        if (userId == null)
+            return RedirectToAction("Register", "UserAuth");
 
-        await _users.SetUserDomainsAsync(userId, domainIds);
+        if (domainIds == null || domainIds.Count == 0)
+            return RedirectToAction("SelectDomain", new { token });
+
+        await _sender.Send(new SetUserDomainsCommand(userId.Value, domainIds));
         return RedirectToAction("Login", "UserAuth");
     }
 }

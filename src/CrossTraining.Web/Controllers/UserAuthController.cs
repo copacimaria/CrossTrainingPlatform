@@ -1,54 +1,73 @@
-using System.Security.Claims;
-using CrossTraining.Application.Interfaces;
-using CrossTraining.Application.ViewModels;
+using CrossTraining.Application.DTOs;
+using CrossTraining.Application.Features.Authentication;
+using CrossTraining.Web.Models;
+using CrossTraining.Web.Security;
+using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CrossTraining.Web.Controllers;
 
+[AllowAnonymous]
 public class UserAuthController : Controller
 {
-    private readonly IAuthService _auth;
+    private readonly ISender _sender;
+    private readonly RegistrationTokenProtector _registrationTokens;
+    private readonly TimeProvider _clock;
 
-    public UserAuthController(IAuthService auth)
+    public UserAuthController(
+        ISender sender,
+        RegistrationTokenProtector registrationTokens,
+        TimeProvider clock)
     {
-        _auth = auth;
+        _sender = sender;
+        _registrationTokens = registrationTokens;
+        _clock = clock;
     }
 
     // --------------------- REGISTER ---------------------
     [HttpGet]
-    public IActionResult Register() => View();
+    public IActionResult Register() => View(new RegisterViewModel());
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [EnableRateLimiting(RateLimitPolicies.Authentication)]
     public async Task<IActionResult> Register(RegisterViewModel model)
     {
         if (!ModelState.IsValid)
             return View(model);
 
-        var result = await _auth.RegisterAsync(model);
+        var result = await _sender.Send(
+            new RegisterUserCommand(model.Name, model.FamilyName, model.Email, model.Password));
+
         if (!result.Succeeded)
         {
             ModelState.AddModelError("", result.Error!);
             return View(model);
         }
 
-        return RedirectToAction("SelectDomain", "Domain", new { userId = result.NewUserId });
+        // Id-ul pleaca semnat, nu in clar: pasul urmator se petrece inainte de login,
+        // deci nu are de unde sa stie cine e utilizatorul altfel decat din acest token.
+        var token = _registrationTokens.Protect(result.NewUserId);
+        return RedirectToAction("SelectDomain", "Domain", new { token });
     }
 
     // --------------------- LOGIN ---------------------
     [HttpGet]
-    public IActionResult Login() => View();
+    public IActionResult Login() => View(new LoginViewModel());
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [EnableRateLimiting(RateLimitPolicies.Authentication)]
     public async Task<IActionResult> Login(LoginViewModel model)
     {
         if (!ModelState.IsValid)
             return View(model);
 
-        var result = await _auth.LoginAsync(model);
+        var result = await _sender.Send(new LoginUserQuery(model.Email, model.Password));
         if (!result.Succeeded)
         {
             ModelState.AddModelError("", result.Error!);
@@ -68,26 +87,30 @@ public class UserAuthController : Controller
         return RedirectToAction("Login");
     }
 
+    // --------------------- ACCES INTERZIS ---------------------
+    [HttpGet]
+    public IActionResult AccessDenied(string? returnUrl)
+    {
+        // Pastram calea ceruta doar daca e locala, altfel devine open redirect.
+        ViewBag.ReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : null;
+        return View();
+    }
+
     // --------------------- HELPERS ---------------------
-    private async Task SignInUserAsync(Application.DTOs.AuthResult result)
+    private async Task SignInUserAsync(AuthResult result)
     {
         var user = result.User!;
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-            new(ClaimTypes.Name, $"{user.Name} {user.FamilyName}"),
-            new(ClaimTypes.Email, user.Email)
-        };
 
-        if (!string.IsNullOrEmpty(result.RoleName))
-            claims.Add(new Claim(ClaimTypes.Role, result.RoleName));
+        // Aceeasi fabrica ca la reimprospatarea cookie-ului, ca sesiunea sa nu piarda
+        // tacut un claim dupa prima revalidare.
+        var context = new UserSecurityContextDto(
+            user.UserId,
+            user.FullName,
+            user.Email,
+            result.RoleName,
+            result.Permissions);
 
-        // Fiecare permisiune devine un claim; view-urile folosesc User.HasClaim(c => c.Value == "...").
-        foreach (var permission in result.Permissions)
-            claims.Add(new Claim("permission", permission));
-
-        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var principal = new ClaimsPrincipal(identity);
+        var principal = UserPrincipalFactory.Create(context, _clock.GetUtcNow());
 
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
     }

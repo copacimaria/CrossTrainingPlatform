@@ -1,6 +1,12 @@
 namespace CrossTraining.Application.DTOs;
 
-/// <summary>Rezultatul unei operatii de schimbare a parolei.</summary>
+/// <summary>
+/// Rezultatul unei comenzi care poate fi refuzata dintr-un motiv de business: parola
+/// veche gresita, un nume deja folosit, un drept sau un rol de care depinde aplicatia.
+///
+/// Refuzurile acestea nu sunt exceptii: sunt raspunsuri asteptate, cu un mesaj pe care
+/// ecranul il arata utilizatorului.
+/// </summary>
 public class OperationResult
 {
     public bool Succeeded { get; init; }

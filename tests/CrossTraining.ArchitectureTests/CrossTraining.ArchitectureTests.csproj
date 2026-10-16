@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>CrossTraining.ArchitectureTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NetArchTest.Rules" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CrossTraining.Domain\CrossTraining.Domain.csproj" />
+    <ProjectReference Include="..\..\src\CrossTraining.Application\CrossTraining.Application.csproj" />
+    <ProjectReference Include="..\..\src\CrossTraining.Infrastructure\CrossTraining.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\CrossTraining.Web\CrossTraining.Web.csproj" />
+  </ItemGroup>
+
+</Project>

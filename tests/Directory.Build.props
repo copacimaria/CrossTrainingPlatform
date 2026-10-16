@@ -1,0 +1,39 @@
+<Project>
+
+  <!-- Mosteneste setarile solutiei, apoi relaxeaza ce nu are sens in teste. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!--
+      CA1707: numele de test contin underscore intentionat
+              (Metoda_Situatie_RezultatAsteptat).
+      CA1711: xUnit cere ca definitia unei colectiuni sa se numeasca XCollection,
+              chiar daca tipul nu este o colectie.
+      GenerateDocumentationFile ramane true (mostenit): fara el IDE0005 nu ruleaza
+      la build. CS1591 e deja suprimat in props-ul de la radacina.
+    -->
+    <NoWarn>$(NoWarn);CA1707;CA1711</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Shouldly" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="Shouldly" />
+  </ItemGroup>
+
+</Project>

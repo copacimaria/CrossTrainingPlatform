@@ -1,7 +1,7 @@
 namespace CrossTraining.Domain.Entities;
 
 /// <summary>Permisiune atomica ce poate fi atasata unui rol.</summary>
-public class AppClaim
+public class AppClaim : ISoftDeletable
 {
     public int ClaimId { get; set; }
     public string ClaimName { get; set; } = string.Empty;

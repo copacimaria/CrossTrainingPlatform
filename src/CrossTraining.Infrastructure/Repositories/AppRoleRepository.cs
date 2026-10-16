@@ -1,5 +1,6 @@
+using CrossTraining.Application.Abstractions.Persistence;
+using CrossTraining.Application.DTOs;
 using CrossTraining.Domain.Entities;
-using CrossTraining.Domain.Interfaces;
 using CrossTraining.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,69 +15,56 @@ public class AppRoleRepository : IAppRoleRepository
         _db = db;
     }
 
-    public async Task<List<AppRole>> GetAllAsync()
-        => await _db.Roles.AsNoTracking().ToListAsync();
+    public async Task<PagedResult<AppRole>> SearchForAdminAsync(string? searchTerm, int page, int pageSize)
+    {
+        // IgnoreQueryFilters: ecranul de administrare arata si rolurile dezactivate, ca la
+        // drepturi. Inainte le ascundea, iar un rol dezactivat nu mai putea fi gasit.
+        var query = LikeFilter.Apply(
+            _db.Roles.AsNoTracking().IgnoreQueryFilters(),
+            searchTerm,
+            r => r.RoleName);
+
+        var total = await query.CountAsync();
+
+        var items = await query
+            .OrderBy(r => r.RoleName)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<AppRole>(items, page, pageSize, total);
+    }
 
     public Task<AppRole?> GetByIdAsync(int id)
         => _db.Roles.FirstOrDefaultAsync(r => r.RoleId == id);
 
-    public async Task<int> CreateAsync(string roleName)
-    {
-        var role = new AppRole { RoleName = roleName, IsActive = true };
-        _db.Roles.Add(role);
-        await _db.SaveChangesAsync();
-        return role.RoleId;
-    }
+    public Task<AppRole?> GetForAdminAsync(int id)
+        => _db.Roles.IgnoreQueryFilters().FirstOrDefaultAsync(r => r.RoleId == id);
 
-    public async Task UpdateNameAsync(int id, string roleName)
-    {
-        var role = await _db.Roles.FirstOrDefaultAsync(r => r.RoleId == id);
-        if (role == null)
-            return;
+    // Comparatia se face in SQL, dupa colatia bazei, ca indexul unic UX_AppRole_RoleName.
+    public Task<AppRole?> GetByNameForAdminAsync(string roleName)
+        => _db.Roles
+              .AsNoTracking()
+              .IgnoreQueryFilters()
+              .FirstOrDefaultAsync(r => r.RoleName == roleName);
 
-        role.RoleName = roleName;
-        await _db.SaveChangesAsync();
-    }
+    public void Add(AppRole role) => _db.Roles.Add(role);
 
-    public async Task SoftDeleteAsync(int id)
-    {
-        var role = await _db.Roles.FirstOrDefaultAsync(r => r.RoleId == id);
-        if (role == null)
-            return;
-
-        role.IsActive = false;
-        await _db.SaveChangesAsync();
-    }
-
+    // Pornim de la Claims, nu de la tabelul pivot: asa filtrul de soft-delete se aplica
+    // direct pe entitatea proiectata si nu poate rezulta un null in lista.
     public async Task<List<AppClaim>> GetClaimsForRoleAsync(int roleId)
-        => await _db.RoleClaims.AsNoTracking()
-                    .Where(rc => rc.RoleId == roleId)
-                    .Select(rc => rc.Claim!)
+        => await _db.Claims.AsNoTracking()
+                    .Where(c => c.RoleClaims.Any(rc => rc.RoleId == roleId))
+                    .OrderBy(c => c.ClaimName)
                     .ToListAsync();
 
-    public async Task<List<int>> GetClaimIdsForRoleAsync(int roleId)
-        => await _db.RoleClaims.AsNoTracking()
-                    .Where(rc => rc.RoleId == roleId)
-                    .Select(rc => rc.ClaimId)
-                    .ToListAsync();
+    // IgnoreQueryFilters: administrarea legaturilor trebuie sa functioneze si cand rolul
+    // sau dreptul este dezactivat, altfel o legatura veche nu ar mai putea fi stearsa.
+    public Task<RoleClaim?> GetRoleClaimAsync(int roleId, int claimId)
+        => _db.RoleClaims.IgnoreQueryFilters()
+                         .FirstOrDefaultAsync(rc => rc.RoleId == roleId && rc.ClaimId == claimId);
 
-    public async Task AddClaimAsync(int roleId, int claimId)
-    {
-        bool exists = await _db.RoleClaims.AnyAsync(rc => rc.RoleId == roleId && rc.ClaimId == claimId);
-        if (exists)
-            return;
+    public void AddClaim(RoleClaim link) => _db.RoleClaims.Add(link);
 
-        _db.RoleClaims.Add(new RoleClaim { RoleId = roleId, ClaimId = claimId });
-        await _db.SaveChangesAsync();
-    }
-
-    public async Task RemoveClaimAsync(int roleId, int claimId)
-    {
-        var link = await _db.RoleClaims.FirstOrDefaultAsync(rc => rc.RoleId == roleId && rc.ClaimId == claimId);
-        if (link == null)
-            return;
-
-        _db.RoleClaims.Remove(link);
-        await _db.SaveChangesAsync();
-    }
+    public void RemoveClaim(RoleClaim link) => _db.RoleClaims.Remove(link);
 }

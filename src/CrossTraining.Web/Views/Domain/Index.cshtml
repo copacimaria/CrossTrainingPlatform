@@ -1,17 +1,27 @@
-﻿@model List<CrossTraining.Domain.Entities.TrainingDomain>
+@model List<DomainDto>
 @{
     ViewData["Title"] = "Domains";
+
+    // Lista se vede cu domains.view; legaturile de modificare duc la actiuni care cer
+    // domains.manage, deci apar doar pentru cine are acel drept.
+    var canManage = User.HasPermission(Permissions.Domains.Manage);
 }
 
 <h2>Domains</h2>
-<a asp-action="Create">Create New Domain</a>
+@if (canManage)
+{
+    <a asp-action="Create">Create New Domain</a>
+}
 
 <table class="table">
     <thead>
         <tr>
             <th>Name</th>
             <th>Active</th>
-            <th>Actions</th>
+            @if (canManage)
+            {
+                <th>Actions</th>
+            }
         </tr>
     </thead>
     <tbody>
@@ -20,10 +30,13 @@
             <tr>
                 <td>@item.DomainName</td>
                 <td>@(item.IsActive ? "Yes" : "No")</td>
-                <td>
-                    <a asp-action="Edit" asp-route-id="@item.DomainId">Edit</a> |
-                    <a asp-action="Delete" asp-route-id="@item.DomainId">Delete</a>
-                </td>
+                @if (canManage)
+                {
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@item.DomainId">Edit</a> |
+                        <a asp-action="Delete" asp-route-id="@item.DomainId">Delete</a>
+                    </td>
+                }
             </tr>
         }
     </tbody>

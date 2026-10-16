@@ -80,6 +80,11 @@ GO
 CREATE UNIQUE INDEX UX_AppUser_Email ON dbo.AppUser (Email);
 GO
 
+-- Index pe cheia straina catre rol. EF Core il creeaza prin conventie, deci trebuie
+-- sa existe si aici, altfel schema scriptata diverge de model.
+CREATE INDEX IX_AppUser_RoleId ON dbo.AppUser (RoleId);
+GO
+
 /* ---------------------------------------------------------------------
    PASUL 3: Game (depinde de Domain)
    --------------------------------------------------------------------- */

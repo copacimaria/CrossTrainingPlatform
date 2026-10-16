@@ -1,4 +1,4 @@
-﻿@model X.PagedList.IPagedList<CrossTraining.Domain.Entities.AppRole>
+@model IPagedList<RoleDto>
 @{
     ViewData["Title"] = "Roluri";
 }
@@ -42,9 +42,14 @@
     </div>
 </div>
 
+@{
+    // Butoanele urmeaza drepturile cerute de actiunile la care duc (vezi AppClaims/Index).
+    var canManage = User.HasPermission(Permissions.Roles.Manage);
+}
+
 <div class="d-flex justify-content-between align-items-center admin-header">
     <h1 class="mb-0 admin-heading">Roluri</h1>
-    @if (User.HasClaim(c => c.Value == "CreateRoles"))
+    @if (canManage)
     {
         <button onclick="loadCreateRole()" data-bs-toggle="modal" data-bs-target="#createRoleModal"
                 class="btn btn-dark fw-bold">
@@ -76,6 +81,7 @@
         <thead>
             <tr>
                 <th class="fw-bold">Nume rol</th>
+                <th class="fw-bold">Stare</th>
                 <th class="fw-bold">Drepturi din rol</th>
                 <th></th>
             </tr>
@@ -85,8 +91,23 @@
             {
                 foreach (var item in Model)
                 {
-                    <tr>
+                    <tr class="@(item.IsActive ? "" : "admin-row-inactive")">
                         <td>@item.RoleName</td>
+                        <td>
+                            @if (item.IsActive)
+                            {
+                                <span class="badge bg-success">Activ</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Dezactivat</span>
+                            }
+                            @if (item.IsSystem)
+                            {
+                                <span class="badge bg-warning text-dark"
+                                      title="Folosit de aplicatie: nu poate fi redenumit sau dezactivat">Sistem</span>
+                            }
+                        </td>
                         <td>
                             <a asp-controller="AppRoles" asp-action="Details" asp-route-id="@item.RoleId"
                                class="btn btn-info btn-sm fw-bold">
@@ -94,18 +115,26 @@
                             </a>
                         </td>
                         <td>
-                            @if (User.HasClaim(c => c.Value == "EditRoles"))
+                            @if (canManage && !item.IsSystem)
                             {
                                 <button data-bs-toggle="modal" data-bs-target="#editRoleModal"
                                         onclick="loadEditRole(@item.RoleId)" class="edit-link">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
                             }
-                            @if (User.HasClaim(c => c.Value == "DeleteRoles"))
+                            @if (canManage && !item.IsSystem && item.IsActive)
                             {
                                 <button data-bs-toggle="modal" data-bs-target="#deleteRoleModal"
                                         onclick="loadDeleteRole(@item.RoleId)" class="delete-link">
                                     <i class="bi bi-trash3"></i>
+                                </button>
+                            }
+                            @if (canManage && !item.IsActive)
+                            {
+                                @* Listener delegat in approles.js, nu onclick (vezi AppClaims/Index). *@
+                                <button type="button" class="reactivate-link" title="Reactiveaza"
+                                        data-reactivate-role="@item.RoleId" data-name="@item.RoleName">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
                                 </button>
                             }
                         </td>

@@ -1,7 +1,7 @@
 namespace CrossTraining.Domain.Entities;
 
 /// <summary>Rol de utilizator (ex: Admin, User). Are asociate mai multe claim-uri.</summary>
-public class AppRole
+public class AppRole : ISoftDeletable
 {
     public int RoleId { get; set; }
     public string RoleName { get; set; } = string.Empty;

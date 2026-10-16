@@ -120,12 +120,41 @@ async function postDeleteClaim(claimId) {
     }
 }
 
+async function reactivateClaim(claimId, claimName) {
+    if (!confirm(`Reactivati claim-ul "${claimName}"? Rolurile care il aveau il primesc inapoi.`)) return;
+
+    const response = await fetch('/AppClaims/Reactivate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'RequestVerificationToken': getToken()
+        },
+        body: `id=${encodeURIComponent(claimId)}`
+    });
+
+    const result = await parseJson(response);
+    if (result && result.success) {
+        sessionStorage.setItem('showToastClaimReactivated', 'true');
+        location.reload();
+    } else {
+        alert(result && result.errors ? result.errors.join("\n") : 'Eroare necunoscuta');
+    }
+}
+
+// Listener delegat, nu onclick in view: butoanele noi nu mai adauga atribute inline pe
+// care CSP-ul le-ar bloca dupa scoaterea lui 'unsafe-inline'.
+document.addEventListener('click', function (e) {
+    const button = e.target.closest('[data-reactivate-claim]');
+    if (button) reactivateClaim(button.dataset.reactivateClaim, button.dataset.name);
+});
+
 // ---------------- TOASTS + CLEANUP ----------------
 document.addEventListener('DOMContentLoaded', function () {
     const toasts = [
         { key: 'showToastClaimCreated', text: 'Claim-ul a fost creat!', bg: 'grey' },
         { key: 'showToastClaimEdited', text: 'Claim-ul a fost editat!', bg: 'green' },
-        { key: 'showToastClaimDeleted', text: 'Claim-ul a fost sters!', bg: 'red' }
+        { key: 'showToastClaimDeleted', text: 'Claim-ul a fost sters!', bg: 'red' },
+        { key: 'showToastClaimReactivated', text: 'Claim-ul a fost reactivat!', bg: 'green' }
     ];
     toasts.forEach(t => {
         if (sessionStorage.getItem(t.key) === 'true') {

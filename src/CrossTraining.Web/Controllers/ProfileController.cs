@@ -1,6 +1,8 @@
-using CrossTraining.Application.Interfaces;
-using CrossTraining.Application.ViewModels;
+using CrossTraining.Application.Features.Domains;
+using CrossTraining.Application.Features.Users;
 using CrossTraining.Web.Extensions;
+using CrossTraining.Web.Models;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,13 +11,11 @@ namespace CrossTraining.Web.Controllers;
 [Authorize]
 public class ProfileController : Controller
 {
-    private readonly IUserService _users;
-    private readonly IDomainService _domains;
+    private readonly ISender _sender;
 
-    public ProfileController(IUserService users, IDomainService domains)
+    public ProfileController(ISender sender)
     {
-        _users = users;
-        _domains = domains;
+        _sender = sender;
     }
 
     public async Task<IActionResult> Index()
@@ -24,7 +24,7 @@ public class ProfileController : Controller
         if (userId == null)
             return RedirectToAction("Login", "UserAuth");
 
-        var profile = await _users.GetProfileAsync(userId.Value);
+        var profile = await _sender.Send(new GetUserProfileQuery(userId.Value));
         if (profile == null)
             return NotFound("User not found");
 
@@ -33,7 +33,7 @@ public class ProfileController : Controller
 
     // ------------------- CHANGE PASSWORD -------------------
     [HttpGet]
-    public IActionResult ChangePassword() => View();
+    public IActionResult ChangePassword() => View(new ChangePasswordViewModel());
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -46,7 +46,9 @@ public class ProfileController : Controller
         if (userId == null)
             return RedirectToAction("Login", "UserAuth");
 
-        var result = await _users.ChangePasswordAsync(userId.Value, model);
+        var result = await _sender.Send(
+            new ChangePasswordCommand(userId.Value, model.OldPassword, model.NewPassword));
+
         if (!result.Succeeded)
         {
             ModelState.AddModelError(result.ErrorField ?? "", result.Error!);
@@ -54,7 +56,7 @@ public class ProfileController : Controller
         }
 
         ViewBag.Success = "Parola a fost schimbata cu succes!";
-        return View();
+        return View(new ChangePasswordViewModel());
     }
 
     // ------------------- CHANGE DOMAINS (many-to-many) -------------------
@@ -65,13 +67,11 @@ public class ProfileController : Controller
         if (userId == null)
             return RedirectToAction("Login", "UserAuth");
 
-        var vm = new ChangeDomainViewModel
+        return View(new ChangeDomainViewModel
         {
-            SelectedDomainIds = await _users.GetUserDomainIdsAsync(userId.Value),
-            AvailableDomains = await _domains.GetActiveAsync()
-        };
-
-        return View(vm);
+            SelectedDomainIds = await _sender.Send(new GetUserDomainIdsQuery(userId.Value)),
+            AvailableDomains = await _sender.Send(new GetActiveDomainsQuery())
+        });
     }
 
     [HttpPost]
@@ -85,11 +85,11 @@ public class ProfileController : Controller
         if (model.SelectedDomainIds == null || model.SelectedDomainIds.Count == 0)
         {
             ModelState.AddModelError("", "Selecteaza cel putin un domeniu.");
-            model.AvailableDomains = await _domains.GetActiveAsync();
+            model.AvailableDomains = await _sender.Send(new GetActiveDomainsQuery());
             return View(model);
         }
 
-        await _users.SetUserDomainsAsync(userId.Value, model.SelectedDomainIds);
+        await _sender.Send(new SetUserDomainsCommand(userId.Value, model.SelectedDomainIds));
 
         TempData["Success"] = "Domeniile au fost actualizate.";
         return RedirectToAction("Index");

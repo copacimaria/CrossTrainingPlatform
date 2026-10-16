@@ -1,12 +1,13 @@
-﻿@model CrossTraining.Application.ViewModels.AppRolesClaimsViewModel
+@model RoleClaimsViewModel
 @Html.AntiForgeryToken()
 
 <div class="row justify-content-center">
     <div class="col-sm-8">
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-        <input type="hidden" asp-for="Role.RoleId" />
-        <input type="hidden" id="allClaimsJson" value='@Html.Raw(Json.Serialize(Model.NormalClaims))' />
+        @* Lista de claim-uri disponibile nu mai este trimisa in pagina si nici inapoi la
+           server: autocomplete-ul o cere pe bucati, filtrata in baza de date. *@
+        <input type="hidden" id="addClaimRoleId" value="@Model.Role.RoleId" />
 
         <div class="container mb-4 addclaim-role-line">
             <div class="row align-items-center">
@@ -22,7 +23,7 @@
             <ul id="searchResults" class="dropdown-menu w-100 addclaim-results"></ul>
         </div>
 
-        <input type="hidden" id="selectedClaimToken" name="selectedClaimToken" />
+        <input type="hidden" id="selectedClaimId" name="selectedClaimId" />
 
         <br />
 

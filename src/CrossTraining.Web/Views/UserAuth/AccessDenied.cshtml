@@ -1,0 +1,18 @@
+@{
+    ViewData["Title"] = "Acces interzis";
+    var returnUrl = ViewBag.ReturnUrl as string;
+}
+
+<div class="page-wrapper">
+    <div class="domain-container">
+        <h2>Acces interzis</h2>
+        <p>Contul tau nu are dreptul necesar pentru pagina ceruta.</p>
+
+        @if (!string.IsNullOrEmpty(returnUrl))
+        {
+            <p class="text-muted">Pagina: <code>@returnUrl</code></p>
+        }
+
+        <a class="submit-btn" href="@Url.Action("DisplayGamesBasedOnDomain", "Games")">Inapoi la jocuri</a>
+    </div>
+</div>

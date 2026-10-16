@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  # Parola exista doar pentru containerul efemer de CI, deci nu e un secret real.
+  # Poate fi suprascrisa cu secrets.CI_SQL_SA_PASSWORD daca politica o cere.
+  SQL_SA_PASSWORD: Str0ng!Passw0rd#CI
+
+jobs:
+  build:
+    name: Build, format, test
+    runs-on: ubuntu-latest
+
+    services:
+      # Testele de persistenta ruleaza pe SQL Server real. Daca serviciul lipseste,
+      # ele se marcheaza ca sarite in loc sa pice (vezi SqlServerFixture).
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: Str0ng!Passw0rd#CI
+          MSSQL_PID: Express
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Str0ng!Passw0rd#CI' -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 30s
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/Directory.Packages.props', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # Unelte locale fixate in .config/dotnet-tools.json (dotnet-ef).
+      - name: Restore tools
+        run: dotnet tool restore
+
+      - name: Restore
+        run: dotnet restore CrossTraining.sln
+
+      # Directory.Build.props are TreatWarningsAsErrors=true, deci orice warning
+      # de compilator sau de analizor opreste build-ul aici.
+      - name: Build (Release)
+        run: dotnet build CrossTraining.sln --configuration Release --no-restore
+
+      - name: Verify formatting
+        run: dotnet format CrossTraining.sln --verify-no-changes --no-restore --verbosity minimal
+
+      # Daca modelul EF a fost schimbat fara sa se genereze migrarea corespunzatoare,
+      # comanda de mai jos produce fisiere noi, iar pasul pica. Fara ea, divergenta
+      # dintre model si schema s-ar descoperi abia la deploy.
+      - name: Check for missing migrations
+        run: |
+          dotnet ef migrations has-pending-model-changes --project src/CrossTraining.Infrastructure --no-build --configuration Release
+
+      - name: Test
+        env:
+          CROSSTRAINING_TEST_SQL: Server=localhost,1433;User Id=sa;Password=${{ env.SQL_SA_PASSWORD }};TrustServerCertificate=True
+        run: >-
+          dotnet test CrossTraining.sln
+          --configuration Release
+          --no-build
+          --verbosity normal
+          --logger "trx;LogFileName=test-results.trx"
+          --collect:"XPlat Code Coverage"
+          --results-directory ./TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./TestResults
+          retention-days: 7

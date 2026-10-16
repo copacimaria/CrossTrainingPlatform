@@ -1,9 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!--
+    Stratul Domain: entitati si porturi. Nu are voie sa refere niciun alt proiect
+    si niciun pachet NuGet de infrastructura. Lista goala de dependinte de mai jos
+    este intentionata - orice adaugare aici trebuie discutata.
+  -->
+
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
     <RootNamespace>CrossTraining.Domain</RootNamespace>
   </PropertyGroup>
 

@@ -46,16 +46,33 @@
             <li><a href="@Url.Action("Index", "Profile")">Profile</a></li>
             <li><a href="@Url.Action("DisplayGamesBasedOnDomain", "Games")">Games</a></li>
 
-            @if (User.IsInRole("Admin"))
+            @* Fiecare link apare dupa dreptul pe care il cere pagina lui, nu dupa numele
+               rolului: un rol nou cu roles.view vede "App Roles", iar un Admin caruia i s-a
+               scos un drept nu mai vede un link care l-ar duce la "acces interzis". *@
+            @{
+                var canViewRoles = User.HasPermission(Permissions.Roles.View);
+                var canViewClaims = User.HasPermission(Permissions.Claims.View);
+                var canViewDomains = User.HasPermission(Permissions.Domains.View);
+            }
+            @if (canViewRoles || canViewClaims || canViewDomains)
             {
                 <li class="has-submenu">
                     <a href="#" id="adminToggle" class="admin-toggle">
                         Admin Settings <span class="arrow">&#9662;</span>
                     </a>
                     <ul id="adminSubmenu" class="submenu">
-                        <li><a href="@Url.Action("Index", "AppRoles")">App Roles</a></li>
-                        <li><a href="@Url.Action("Index", "AppClaims")">App Claims</a></li>
-                        <li><a href="@Url.Action("Index", "Domain")">Domains</a></li>
+                        @if (canViewRoles)
+                        {
+                            <li><a href="@Url.Action("Index", "AppRoles")">App Roles</a></li>
+                        }
+                        @if (canViewClaims)
+                        {
+                            <li><a href="@Url.Action("Index", "AppClaims")">App Claims</a></li>
+                        }
+                        @if (canViewDomains)
+                        {
+                            <li><a href="@Url.Action("Index", "Domain")">Domains</a></li>
+                        }
                     </ul>
                 </li>
             }

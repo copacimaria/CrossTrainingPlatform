@@ -62,3 +62,24 @@
     max-width: 19rem;
     overflow-y: auto;
 }
+
+/* Randurile dezactivate raman in lista ca sa poata fi reactivate, dar nu trebuie
+   confundate cu cele active. */
+.admin-row-inactive td {
+    opacity: 0.6;
+}
+
+/* Acelasi stil ca .edit-link / .delete-link din site.css. */
+.reactivate-link {
+    color: #80c1ff;
+    text-decoration: none;
+    background: none;
+    border: none;
+    display: inline-block;
+    transition: transform 0.2s, color 0.2s;
+}
+
+    .reactivate-link:hover {
+        color: #4da6ff;
+        transform: scale(1.4);
+    }

@@ -1,4 +1,4 @@
-﻿@model CrossTraining.Application.ViewModels.GamesViewModel
+@model GamesForUserDto
 @{
     ViewData["Title"] = "Games";
 }
@@ -52,7 +52,7 @@
             <div class="flip-card-inner">
                 <!-- FRONT -->
                 <div class="flip-card-front">
-                    @if (User.IsInRole("Admin"))
+                    @if (User.HasPermission(Permissions.Games.Manage))
                     {
                         <div class="card-actions">
                             <button data-bs-toggle="modal" data-bs-target="#editGameModal"
@@ -78,9 +78,9 @@
                     <div class="game-name">@game.GameName</div>
 
                     <div class="game-body">
-                        @if (game.Domain != null)
+                        @if (!string.IsNullOrEmpty(game.DomainName))
                         {
-                            <p><strong>Domain:</strong> @game.Domain.DomainName</p>
+                            <p><strong>Domain:</strong> @game.DomainName</p>
                         }
                         else
                         {
@@ -110,7 +110,7 @@
         </div>
     }
 
-    @if (User.IsInRole("Admin"))
+    @if (User.HasPermission(Permissions.Games.Manage))
     {
         <div class="game-card add-game-card" onclick="loadCreateGame()"
              data-bs-toggle="modal" data-bs-target="#createGameModal">

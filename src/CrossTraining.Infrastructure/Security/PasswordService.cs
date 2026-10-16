@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
-using CrossTraining.Application.Interfaces;
+using CrossTraining.Application.Abstractions.Security;
 using CrossTraining.Domain.Entities;
 using Isopoh.Cryptography.Argon2;
 using Isopoh.Cryptography.SecureArray;

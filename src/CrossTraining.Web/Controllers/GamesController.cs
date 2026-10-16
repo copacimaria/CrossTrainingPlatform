@@ -1,6 +1,11 @@
-using CrossTraining.Application.Interfaces;
-using CrossTraining.Domain.Entities;
+using CrossTraining.Application.Authorization;
+using CrossTraining.Application.DTOs;
+using CrossTraining.Application.Features.Domains;
+using CrossTraining.Application.Features.Games;
 using CrossTraining.Web.Extensions;
+using CrossTraining.Web.Models;
+using CrossTraining.Web.Security;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -10,13 +15,11 @@ namespace CrossTraining.Web.Controllers;
 [Authorize]
 public class GamesController : Controller
 {
-    private readonly IGameService _games;
-    private readonly IDomainService _domains;
+    private readonly ISender _sender;
 
-    public GamesController(IGameService games, IDomainService domains)
+    public GamesController(ISender sender)
     {
-        _games = games;
-        _domains = domains;
+        _sender = sender;
     }
 
     [HttpGet]
@@ -26,65 +29,62 @@ public class GamesController : Controller
         if (userId == null)
             return RedirectToAction("Login", "UserAuth");
 
-        var vm = await _games.GetGamesForUserAsync(userId.Value);
-        return View("Index", vm);
+        return View("Index", await _sender.Send(new GetGamesForUserQuery(userId.Value)));
     }
 
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(Permissions.Games.Manage)]
     public async Task<IActionResult> Create()
     {
         await PopulateDomainsAsync();
-        return PartialView("_CreateGame", new Game());
+        return PartialView("_CreateGame", new GameFormModel());
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(Game game)
+    [HasPermission(Permissions.Games.Manage)]
+    public async Task<IActionResult> Create(GameFormModel form)
     {
         if (!ModelState.IsValid)
-        {
-            await PopulateDomainsAsync(game.DomainId);
-            return PartialView("_CreateGame", game);
-        }
+            return Json(new { success = false, errors = ModelState.ErrorMessages() });
 
-        await _games.CreateAsync(game);
+        await _sender.Send(new CreateGameCommand(
+            form.GameName, form.Description, form.DownloadLink, form.DomainId));
+
         return Json(new { success = true, message = "Game created successfully!" });
     }
 
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(Permissions.Games.Manage)]
     public async Task<IActionResult> Edit(int id)
     {
-        var game = await _games.GetByIdAsync(id);
+        var game = await _sender.Send(new GetGameQuery(id));
         if (game == null)
             return NotFound();
 
         await PopulateDomainsAsync(game.DomainId);
-        return PartialView("_EditGame", game);
+        return PartialView("_EditGame", GameFormModel.FromDto(game));
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, Game game)
+    [HasPermission(Permissions.Games.Manage)]
+    public async Task<IActionResult> Edit(int id, GameFormModel form)
     {
         if (!ModelState.IsValid)
-        {
-            await PopulateDomainsAsync(game.DomainId);
-            return PartialView("_EditGame", game);
-        }
+            return Json(new { success = false, errors = ModelState.ErrorMessages() });
 
-        await _games.UpdateAsync(id, game);
+        await _sender.Send(new UpdateGameCommand(
+            id, form.GameName, form.Description, form.DownloadLink, form.DomainId));
+
         return Json(new { success = true, message = "Game updated successfully!" });
     }
 
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [HasPermission(Permissions.Games.Manage)]
     public async Task<IActionResult> Delete(int id)
     {
-        var game = await _games.GetByIdAsync(id);
+        var game = await _sender.Send(new GetGameQuery(id));
         if (game == null)
             return NotFound();
 
@@ -92,17 +92,18 @@ public class GamesController : Controller
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
+    [HasPermission(Permissions.Games.Manage)]
     public async Task<IActionResult> PostDelete(int gameId)
     {
-        await _games.SoftDeleteAsync(gameId);
+        await _sender.Send(new DeactivateGameCommand(gameId));
         return Json(new { success = true, message = "Game deleted successfully!" });
     }
 
     private async Task PopulateDomainsAsync(int? selectedId = null)
     {
-        var domains = await _domains.GetActiveAsync();
-        ViewBag.Domains = new SelectList(domains, "DomainId", "DomainName", selectedId);
+        var domains = await _sender.Send(new GetActiveDomainsQuery());
+        ViewBag.Domains = new SelectList(
+            domains, nameof(DomainDto.DomainId), nameof(DomainDto.DomainName), selectedId);
     }
 }

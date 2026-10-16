@@ -1,0 +1,37 @@
+<Project>
+
+  <!--
+    Setari comune tuturor proiectelor din solutie.
+    Modificarile facute aici se aplica automat la orice proiect nou adaugat.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Un warning netratat devine datorie tehnica. Il oprim din primul moment. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <!-- Regulile de stil din .editorconfig se verifica la build, nu doar in IDE. -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <!--
+      Necesar pentru ca IDE0005 (using-uri inutile) sa fie raportat la build, nu doar in IDE.
+      CS1591 (lipseste comentariul XML) ramane suprimat: documentam ce merita documentat,
+      nu fiecare membru public.
+    -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Build reproductibil: acelasi cod sursa -> acelasi binar. -->
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+</Project>

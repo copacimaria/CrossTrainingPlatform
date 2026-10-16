@@ -1,0 +1,7 @@
+# Suprascrieri pentru proiectele de test. Fara root = true: restul regulilor se
+# mostenesc din .editorconfig-ul de la radacina solutiei.
+
+[*.cs]
+# Numele metodelor de test folosesc underscore ca separator de sectiuni
+# (Metoda_Situatie_RezultatAsteptat), ceea ce incalca regula de pascal_case.
+dotnet_diagnostic.IDE1006.severity = none

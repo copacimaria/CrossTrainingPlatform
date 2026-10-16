@@ -14,6 +14,10 @@ public class UserDomainConfiguration : IEntityTypeConfiguration<UserDomain>
     {
         builder.ToTable("UserDomain");
         builder.HasKey(ud => new { ud.UserId, ud.DomainId });
+        builder.HasIndex(ud => ud.DomainId).HasDatabaseName("IX_UserDomain_DomainId");
+
+        // Filtru pereche cu cel de pe AppUser si Domain, din acelasi motiv ca la RoleClaim.
+        builder.HasQueryFilter(ud => ud.User!.IsActive && ud.Domain!.IsActive);
 
         builder.Property(ud => ud.UserId).HasColumnName("UserId");
         builder.Property(ud => ud.DomainId).HasColumnName("DomainId");

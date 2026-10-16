@@ -2,19 +2,19 @@ namespace CrossTraining.Domain.Entities;
 
 /// <summary>
 /// Utilizator al platformei. Un user poate avea mai multe domenii (many-to-many prin UserDomain).
-/// Parola este stocata doar ca hash (vezi Infrastructure/PasswordService).
+/// Parola este stocata doar ca hash Argon2id (vezi Infrastructure/PasswordService).
 /// </summary>
-public class AppUser
+public class AppUser : ISoftDeletable
 {
     public int UserId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string FamilyName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
 
-    /// <summary>Hash-ul parolei (PBKDF2). Niciodata text clar.</summary>
+    /// <summary>Hash-ul parolei (Argon2id). Niciodata text clar.</summary>
     public string PasswordHash { get; set; } = string.Empty;
 
-    public DateTime? CreationDate { get; set; }
+    public DateTime? CreatedAt { get; set; }
     public bool IsActive { get; set; } = true;
 
     public int? RoleId { get; set; }

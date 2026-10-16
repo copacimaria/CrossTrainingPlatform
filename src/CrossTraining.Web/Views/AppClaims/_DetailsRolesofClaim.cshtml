@@ -1,4 +1,4 @@
-﻿@model CrossTraining.Domain.Entities.AppClaim
+@model ClaimWithRolesDto
 
 <dl class="row admin-detail-list">
     <dt>Claim-ul:</dt>
@@ -6,12 +6,12 @@
 
     <dt>Rolurile asociate acestui claim:</dt>
     <dd>
-        @if (Model.RoleClaims != null && Model.RoleClaims.Any())
+        @if (Model.RoleNames.Count > 0)
         {
             <ul class="admin-role-list">
-                @foreach (var rc in Model.RoleClaims)
+                @foreach (var roleName in Model.RoleNames)
                 {
-                    <li>@(rc.Role?.RoleName ?? "-")</li>
+                    <li>@roleName</li>
                 }
             </ul>
         }
