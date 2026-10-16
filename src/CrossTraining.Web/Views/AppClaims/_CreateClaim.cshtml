@@ -1,20 +1,21 @@
 @model ClaimFormModel
-@Html.AntiForgeryToken()
 
-<div class="row justify-content-center">
-    <div class="col-sm-8">
-        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+@* Trimis de admin.js (data-ajax-form). Tag helper-ul <form> pune si token-ul antiforgery. *@
+<form asp-action="Create" method="post" data-ajax-form data-toast="Claim-ul a fost creat!" data-toast-color="grey">
+    <div class="row justify-content-center">
+        <div class="col-sm-8">
+            <div class="alert alert-danger py-2" data-form-errors role="alert" hidden></div>
 
-        <div class="modal-form-group mb-3">
-            <label asp-for="ClaimName" class="control-label">Numele claim-ului:</label>
-            <input asp-for="ClaimName" id="claimNameCreate" class="form-control" />
-            <span asp-validation-for="ClaimName" class="text-danger"></span>
-        </div>
+            <div class="modal-form-group mb-3">
+                <label asp-for="ClaimName" class="control-label">Numele claim-ului:</label>
+                <input asp-for="ClaimName" class="form-control" required />
+            </div>
 
-        <br />
+            <br />
 
-        <div class="d-flex justify-content-center">
-            <button type="button" onclick="createClaim()" class="btn btn-success">Adauga</button>
+            <div class="d-flex justify-content-center">
+                <button type="submit" class="btn btn-success">Adauga</button>
+            </div>
         </div>
     </div>
-</div>
+</form>

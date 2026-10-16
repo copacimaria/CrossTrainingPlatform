@@ -1,6 +1,6 @@
 # CrossTrainingPlatform
 
-Platforma web ASP.NET Core (MVC, .NET 8) prin care utilizatorii primesc jocuri
+Platforma web ASP.NET Core (MVC, .NET 10) prin care utilizatorii primesc jocuri
 educationale filtrate dupa domeniile pe care si le-au ales, iar administratorii
 gestioneaza domeniile, jocurile, rolurile si permisiunile.
 
@@ -95,7 +95,7 @@ invalideze hash-urile existente, pentru ca formatul PHC isi poarta parametrii cu
 | `X-Forwarded-For` acceptat doar de la proxy-uri declarate | `Program.cs` (`ReverseProxy:KnownProxies`) |
 | Rate limiting pe login si register: 10 incercari / 5 min per IP | `Program.cs`, `Web/Security/RateLimitPolicies.cs` |
 | Cookie: `HttpOnly`, `SameSite=Lax`, `Secure`, nume propriu | `Program.cs` |
-| CSP + `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` | `Web/Middleware/SecurityHeadersMiddleware.cs` |
+| CSP fara `'unsafe-inline'` in `script-src` (view-urile nu au script inline, verificat de teste) + `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` | `Web/Middleware/SecurityHeadersMiddleware.cs` |
 | Id-ul de utilizator semnat in pasul de inregistrare (vezi [ADR-0004](docs/adr/0004-identitate-in-fluxul-de-inregistrare.md)) | `Web/Security/RegistrationTokenProtector.cs` |
 | Antiforgery pe toate actiunile POST | atribute pe controllere |
 
@@ -146,11 +146,14 @@ verificata de un test de arhitectura.
 
 ### Erori, logging, sanatate
 
-Vezi [ADR-0011](docs/adr/0011-erori-logging-si-configurare-pentru-productie.md).
+Vezi [ADR-0011](docs/adr/0011-erori-logging-si-configurare-pentru-productie.md) si
+[ADR-0012](docs/adr/0012-raspunsuri-ajax-si-comportament-declarativ.md).
 
 | Ce | Cum |
 |---|---|
-| Eroare neasteptata intr-o cerere din JS | `ProblemDetails` cu `success`, `errors` si codul cererii (`AjaxExceptionHandler`) |
+| Formular invalid sau refuz de business intr-o cerere din JS | `400` `ProblemDetails` cu `success`, `errors` si codul cererii (`AjaxResponseExtensions`) |
+| Inregistrare lipsa ceruta dintr-un modal | `404` `ProblemDetails`, aceeasi forma |
+| Eroare neasteptata intr-o cerere din JS | `500` `ProblemDetails`, aceeasi forma (`AjaxExceptionHandler`) |
 | Eroare neasteptata intr-o pagina | `/Home/Error`, cu acelasi cod de cerere |
 | Logging | Serilog, structurat: text lizibil local, JSON compact in rest; un rand per cerere HTTP |
 | `/health` | procesul raspunde (repornire automata) |
@@ -265,7 +268,7 @@ Regulile sunt aplicate la build, nu lasate la latitudinea fiecaruia:
 
 | Fisier | Ce impune |
 |---|---|
-| `Directory.Build.props` | `net8.0`, nullable, `TreatWarningsAsErrors`, analizoare la nivel `Recommended`, build determinist. |
+| `Directory.Build.props` | `net10.0`, nullable, `TreatWarningsAsErrors`, analizoare la nivel `Recommended`, build determinist. |
 | `Directory.Packages.props` | Central Package Management - versiunile NuGet se declara o singura data. |
 | `.editorconfig` | Stil de cod si conventii de numire, verificate la build (`EnforceCodeStyleInBuild`). |
 | `global.json` | Pineaza versiunea de SDK, ca sa nu difere build-ul local de cel din CI. |

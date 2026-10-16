@@ -6,7 +6,8 @@
   -->
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <!-- .NET 10 (LTS, suport pana in noiembrie 2028). .NET 8 iese din suport pe 10 noiembrie 2026. -->
+    <TargetFramework>net10.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

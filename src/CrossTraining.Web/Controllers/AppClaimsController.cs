@@ -25,6 +25,9 @@ public class AppClaimsController : Controller
         // Filtrarea, numararea si decuparea se fac in baza de date; aici doar adaptam
         // rezultatul la componenta de paginare din view.
         var result = await _sender.Send(new SearchClaimsQuery(claimSearch, Math.Max(page ?? 1, 1), PageSize));
+
+        // Termenul ramane in casuta de cautare si in legaturile de paginare.
+        ViewBag.SelectedClaim = claimSearch;
         return View(result.ToPagedList());
     }
 
@@ -32,7 +35,7 @@ public class AppClaimsController : Controller
     {
         var claim = await _sender.Send(new GetClaimQuery(id));
         if (claim == null)
-            return NotFound();
+            return this.AjaxNotFound("Dreptul nu exista.");
 
         return PartialView("_DetailsRolesofClaim", claim);
     }
@@ -47,10 +50,10 @@ public class AppClaimsController : Controller
     public async Task<IActionResult> Create(ClaimFormModel form)
     {
         if (!ModelState.IsValid)
-            return Json(new { success = false, errors = ModelState.ErrorMessages() });
+            return this.AjaxInvalidForm();
 
         var result = await _sender.Send(new CreateClaimCommand(form.ClaimName));
-        return result.ToJsonResult();
+        return this.AjaxOutcome(result);
     }
 
     [HttpGet]
@@ -59,7 +62,7 @@ public class AppClaimsController : Controller
     {
         var claim = await _sender.Send(new GetClaimQuery(id));
         if (claim == null)
-            return Json(new { success = false, message = "Claim-ul nu exista." });
+            return this.AjaxNotFound("Dreptul nu exista.");
 
         return PartialView("_EditClaim", new ClaimFormModel
         {
@@ -74,10 +77,10 @@ public class AppClaimsController : Controller
     public async Task<IActionResult> Edit(int id, ClaimFormModel form)
     {
         if (!ModelState.IsValid)
-            return Json(new { success = false, errors = ModelState.ErrorMessages() });
+            return this.AjaxInvalidForm();
 
         var result = await _sender.Send(new RenameClaimCommand(id, form.ClaimName));
-        return result.ToJsonResult();
+        return this.AjaxOutcome(result);
     }
 
     [HasPermission(Permissions.Claims.Manage)]
@@ -85,7 +88,7 @@ public class AppClaimsController : Controller
     {
         var claim = await _sender.Send(new GetClaimQuery(id));
         if (claim == null)
-            return Json(new { success = false, message = "Claim-ul nu exista." });
+            return this.AjaxNotFound("Dreptul nu exista.");
 
         return PartialView("_DeleteClaim", claim);
     }
@@ -96,7 +99,7 @@ public class AppClaimsController : Controller
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var result = await _sender.Send(new DeactivateClaimCommand(id));
-        return result.ToJsonResult();
+        return this.AjaxOutcome(result);
     }
 
     [HttpPost]
@@ -105,6 +108,6 @@ public class AppClaimsController : Controller
     public async Task<IActionResult> Reactivate(int id)
     {
         var result = await _sender.Send(new ReactivateClaimCommand(id));
-        return result.ToJsonResult();
+        return this.AjaxOutcome(result);
     }
 }

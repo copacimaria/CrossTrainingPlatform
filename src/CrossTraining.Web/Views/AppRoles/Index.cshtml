@@ -51,7 +51,7 @@
     <h1 class="mb-0 admin-heading">Roluri</h1>
     @if (canManage)
     {
-        <button onclick="loadCreateRole()" data-bs-toggle="modal" data-bs-target="#createRoleModal"
+        <button type="button" data-modal-url="@Url.Action("Create")" data-modal="#createRoleModal"
                 class="btn btn-dark fw-bold">
             <i class="bi bi-plus-circle me-2"></i> Creeaza un rol nou
         </button>
@@ -61,19 +61,19 @@
 <div class="col admin-text-light">
     <!-- Filtre -->
     <div class="d-flex mb-3">
-        <form method="get" class="d-flex gap-3 admin-filter-form">
+        <form asp-action="Index" method="get" class="d-flex gap-3 admin-filter-form">
             <div>
-                <label for="RoleSearch" class="form-label mb-0 admin-filter-label">Cauta rolul:</label>
-                <input type="text" id="RoleSearch" name="RoleSearch" placeholder="Cauta dupa nume"
+                <label for="roleSearch" class="form-label mb-0 admin-filter-label">Cauta rolul:</label>
+                <input type="text" id="roleSearch" name="roleSearch" placeholder="Cauta dupa nume"
                        class="form-control form-control-sm admin-filter-input"
                        value="@(ViewBag.SelectedRole ?? "")" />
             </div>
-            <button type="button" class="btn btn-success mt-4 fw-bold" onclick="searchRole()">
+            <button type="submit" class="btn btn-success mt-4 fw-bold">
                 <i class="bi bi-search"></i> Filtreaza
             </button>
-            <button type="button" class="btn btn-danger mt-4 fw-bold" onclick="resetRoleFilters()">
+            <a asp-action="Index" class="btn btn-danger mt-4 fw-bold">
                 <i class="bi bi-x-circle"></i> Reseteaza
-            </button>
+            </a>
         </form>
     </div>
 
@@ -115,27 +115,32 @@
                             </a>
                         </td>
                         <td>
+                            @* Atributele data-* le leaga admin.js (vezi AppClaims/Index). *@
                             @if (canManage && !item.IsSystem)
                             {
-                                <button data-bs-toggle="modal" data-bs-target="#editRoleModal"
-                                        onclick="loadEditRole(@item.RoleId)" class="edit-link">
+                                <button type="button" class="edit-link" title="Editeaza"
+                                        data-modal-url="@Url.Action("Edit", new { id = item.RoleId })"
+                                        data-modal="#editRoleModal">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
                             }
                             @if (canManage && !item.IsSystem && item.IsActive)
                             {
-                                <button data-bs-toggle="modal" data-bs-target="#deleteRoleModal"
-                                        onclick="loadDeleteRole(@item.RoleId)" class="delete-link">
+                                <button type="button" class="delete-link" title="Sterge"
+                                        data-modal-url="@Url.Action("Delete", new { id = item.RoleId })"
+                                        data-modal="#deleteRoleModal">
                                     <i class="bi bi-trash3"></i>
                                 </button>
                             }
                             @if (canManage && !item.IsActive)
                             {
-                                @* Listener delegat in approles.js, nu onclick (vezi AppClaims/Index). *@
-                                <button type="button" class="reactivate-link" title="Reactiveaza"
-                                        data-reactivate-role="@item.RoleId" data-name="@item.RoleName">
-                                    <i class="bi bi-arrow-counterclockwise"></i>
-                                </button>
+                                <form asp-action="Reactivate" asp-route-id="@item.RoleId" method="post" class="d-inline"
+                                      data-ajax-form data-toast="Rolul a fost reactivat!" data-toast-color="green"
+                                      data-confirm="@($"Reactivati rolul \"{item.RoleName}\"? Utilizatorii lui primesc inapoi drepturile rolului.")">
+                                    <button type="submit" class="reactivate-link" title="Reactiveaza">
+                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                    </button>
+                                </form>
                             }
                         </td>
                     </tr>
@@ -148,7 +153,3 @@
         @Html.PagedListPager(Model, page => Url.Action("Index", "AppRoles", new { page, RoleSearch = ViewBag.SelectedRole }))
     </div>
 </div>
-
-@section Scripts {
-    <script src="~/js/approles.js" asp-append-version="true"></script>
-}

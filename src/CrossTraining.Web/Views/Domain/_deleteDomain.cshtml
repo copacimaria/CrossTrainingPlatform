@@ -1,19 +1,20 @@
 @model DomainDto
-@{
-    ViewData["Title"] = "Delete Domain";
-}
 
-<h2>Delete Domain</h2>
+<h1 class="delete-heading">Sunteti sigur ca vreti sa stergeti acest domeniu?</h1>
+<hr />
 
-<p>Are you sure you want to delete this domain?</p>
+<dl class="row admin-detail-list">
+    <dt class="col-sm-4">Domeniul:</dt>
+    <dd class="col-sm-8">@Model.DomainName</dd>
+</dl>
 
-<div>
-    <strong>Name:</strong> @Model.DomainName <br />
-    <strong>Active:</strong> @(Model.IsActive ? "Yes" : "No")
-</div>
+<br />
 
-<form asp-action="Delete" asp-route-id="@Model.DomainId" method="post">
-    <input type="hidden" asp-for="DomainId" />
-    <button type="submit">Yes, Delete</button>
-    <a asp-action="Index">Cancel</a>
+<form asp-action="DeleteConfirmed" asp-route-id="@Model.DomainId" method="post"
+      data-ajax-form data-toast="Domeniul a fost sters!" data-toast-color="red">
+    <div class="alert alert-danger py-2" data-form-errors role="alert" hidden></div>
+
+    <div class="d-flex justify-content-center">
+        <button type="submit" class="btn btn-danger">Confirma stergerea</button>
+    </div>
 </form>

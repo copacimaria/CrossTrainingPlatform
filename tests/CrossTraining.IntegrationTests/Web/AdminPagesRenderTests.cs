@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using CrossTraining.Domain.Authorization;
 using CrossTraining.Domain.Entities;
@@ -38,7 +39,9 @@ public sealed class AdminPagesRenderTests : IDisposable
         _factory = new AdminFactory(_sql.ConnectionString, _seed.UserId);
     }
 
-    public static TheoryData<string> AdminPages() =>
+    public static TheoryData<string> AdminPages() => [.. AdminPagePaths];
+
+    private static readonly string[] AdminPagePaths =
     [
         "/AppClaims/Index",
         "/AppClaims/Create",
@@ -78,29 +81,47 @@ public sealed class AdminPagesRenderTests : IDisposable
             AllowAutoRedirect = false
         });
 
-        // Fiecare dintre acestea trece un model construit in controller catre un partial:
-        // exact locul unde o nepotrivire de tip nu ar fi prinsa la compilare.
-        var paths = new[]
-        {
-            $"/AppClaims/Details/{_seed.ClaimId}",
-            $"/AppClaims/Edit/{_seed.ClaimId}",
-            $"/AppClaims/Delete/{_seed.ClaimId}",
-            $"/AppRoles/Details/{_seed.RoleId}",
-            $"/AppRoles/Edit/{_seed.RoleId}",
-            $"/AppRoles/Delete/{_seed.RoleId}",
-            $"/AppRoles/AddClaim/{_seed.RoleId}",
-            $"/Games/Edit/{_seed.GameId}",
-            $"/Games/Delete/{_seed.GameId}",
-            $"/Domain/Edit/{_seed.DomainId}",
-            $"/Domain/Delete/{_seed.DomainId}"
-        };
-
-        foreach (var path in paths)
+        foreach (var path in SeededPaths())
         {
             var response = await client.GetAsync(new Uri(path, UriKind.Relative));
             response.StatusCode.ShouldBe(HttpStatusCode.OK, $"{path} nu s-a randat");
         }
     }
+
+    [SkippableFact]
+    public async Task PaginileSiModalele_NuAuScripturiInline()
+    {
+        // CSP-ul nu permite 'unsafe-inline' in script-src: un onclick=... ramas intr-un view
+        // ar lasa butonul mort in browser, fara nicio eroare pe server.
+        Skip.IfNot(_sql.IsAvailable, _sql.SkipReason);
+
+        using var client = _factory!.CreateClient();
+
+        foreach (var path in AdminPagePaths.Concat(SeededPaths()))
+        {
+            var html = await client.GetStringAsync(Path(path));
+            InlineScriptScanner.FindViolations(html).ShouldBeEmpty($"{path} are script inline");
+        }
+    }
+
+    /// <summary>
+    /// Paginile si modalele care primesc un model construit in controller si trimis unui
+    /// partial: exact locul unde o nepotrivire de tip nu ar fi prinsa la compilare.
+    /// </summary>
+    private string[] SeededPaths() =>
+    [
+        $"/AppClaims/Details/{_seed.ClaimId}",
+        $"/AppClaims/Edit/{_seed.ClaimId}",
+        $"/AppClaims/Delete/{_seed.ClaimId}",
+        $"/AppRoles/Details/{_seed.RoleId}",
+        $"/AppRoles/Edit/{_seed.RoleId}",
+        $"/AppRoles/Delete/{_seed.RoleId}",
+        $"/AppRoles/AddClaim/{_seed.RoleId}",
+        $"/Games/Edit/{_seed.GameId}",
+        $"/Games/Delete/{_seed.GameId}",
+        $"/Domain/Edit/{_seed.DomainId}",
+        $"/Domain/Delete/{_seed.DomainId}"
+    ];
 
     // ------------------- ROLURI SI DREPTURI DEZACTIVATE / DE SISTEM -------------------
 
@@ -114,8 +135,12 @@ public sealed class AdminPagesRenderTests : IDisposable
         var claims = await client.GetStringAsync(Path($"/AppClaims/Index?claimSearch={_seed.Suffix}"));
         var roles = await client.GetStringAsync(Path($"/AppRoles/Index?roleSearch={_seed.Suffix}"));
 
-        claims.ShouldContain($"data-reactivate-claim=\"{_seed.InactiveClaimId}\"");
-        roles.ShouldContain($"data-reactivate-role=\"{_seed.InactiveRoleId}\"");
+        claims.ShouldContain($"action=\"/AppClaims/Reactivate/{_seed.InactiveClaimId}\"");
+        roles.ShouldContain($"action=\"/AppRoles/Reactivate/{_seed.InactiveRoleId}\"");
+
+        // Termenul cautat ramane in casuta (si, prin acelasi ViewBag, in paginare).
+        claims.ShouldContain($"value=\"{_seed.Suffix}\"");
+        roles.ShouldContain($"value=\"{_seed.Suffix}\"");
     }
 
     [SkippableFact]
@@ -128,8 +153,8 @@ public sealed class AdminPagesRenderTests : IDisposable
         var html = await client.GetStringAsync(Path($"/AppClaims/Index?claimSearch={Permissions.Roles.Manage}"));
 
         html.ShouldContain("Sistem");
-        html.ShouldNotContain("loadEditClaim(");
-        html.ShouldNotContain("loadDeleteClaim(");
+        html.ShouldNotContain("/AppClaims/Edit/");
+        html.ShouldNotContain("/AppClaims/Delete/");
     }
 
     [SkippableFact]
@@ -144,9 +169,10 @@ public sealed class AdminPagesRenderTests : IDisposable
             adminRoleId = (await db.Roles.SingleAsync(r => r.RoleName == SystemRoles.Admin)).RoleId;
 
         using var client = _factory!.CreateClient();
-        var response = await PostFromPageAsync(client, "/AppRoles/Index", "/AppRoles/DeleteConfirmed", adminRoleId);
+        using var response = await PostFromPageAsync(client, "/AppRoles/Index", "/AppRoles/DeleteConfirmed", Id(adminRoleId));
 
-        response.ShouldContain("\"success\":false");
+        var errors = await ReadProblemAsync(response, HttpStatusCode.BadRequest);
+        errors.ShouldNotBeEmpty();
         await using (var db = _sql.CreateDbContext())
             (await db.Roles.SingleAsync(r => r.RoleId == adminRoleId)).IsActive.ShouldBeTrue();
     }
@@ -157,37 +183,155 @@ public sealed class AdminPagesRenderTests : IDisposable
         Skip.IfNot(_sql.IsAvailable, _sql.SkipReason);
 
         using var client = _factory!.CreateClient();
-        var response = await PostFromPageAsync(client, "/AppClaims/Index", "/AppClaims/Reactivate", _seed.InactiveClaimId);
+        using var response = await PostFromPageAsync(client, "/AppClaims/Index", "/AppClaims/Reactivate", Id(_seed.InactiveClaimId));
 
-        response.ShouldContain("\"success\":true");
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await response.Content.ReadAsStringAsync()).ShouldContain("\"success\":true");
         await using var db = _sql.CreateDbContext();
         (await db.Claims.SingleAsync(c => c.ClaimId == _seed.InactiveClaimId)).IsActive.ShouldBeTrue();
+    }
+
+    // ------------------- RASPUNSURI DE EROARE PENTRU JS -------------------
+
+    [SkippableFact]
+    public async Task FormularInvalid_Raspunde400CuMesajulDeLangaCamp()
+    {
+        Skip.IfNot(_sql.IsAvailable, _sql.SkipReason);
+
+        using var client = _factory!.CreateClient();
+        using var response = await PostFromPageAsync(
+            client, "/AppRoles/Index", "/AppRoles/Create", new KeyValuePair<string, string>("RoleName", ""));
+
+        var errors = await ReadProblemAsync(response, HttpStatusCode.BadRequest);
+        errors.ShouldContain("Rolul trebuie sa aibe un nume!");
+    }
+
+    [SkippableFact]
+    public async Task NumeDuplicat_Raspunde400CuMotivulRefuzului()
+    {
+        Skip.IfNot(_sql.IsAvailable, _sql.SkipReason);
+
+        using var client = _factory!.CreateClient();
+        using var response = await PostFromPageAsync(
+            client, "/AppClaims/Index", "/AppClaims/Create", new KeyValuePair<string, string>("ClaimName", $"drept-{_seed.Suffix}"));
+
+        var errors = await ReadProblemAsync(response, HttpStatusCode.BadRequest);
+        errors.ShouldHaveSingleItem().ShouldNotBeNullOrWhiteSpace();
+    }
+
+    [SkippableTheory]
+    [InlineData("/AppClaims/Details/", "Dreptul nu exista.")]
+    [InlineData("/AppRoles/Edit/", "Rolul nu exista.")]
+    [InlineData("/Games/Edit/", "Jocul nu exista.")]
+    [InlineData("/Games/Delete/", "Jocul nu exista.")]
+    [InlineData("/Domain/Edit/", "Domeniul nu exista.")]
+    [InlineData("/Domain/Delete/", "Domeniul nu exista.")]
+    public async Task ModalPentruOInregistrareLipsa_Raspunde404CuMesaj(string path, string message)
+    {
+        Skip.IfNot(_sql.IsAvailable, _sql.SkipReason);
+
+        using var client = _factory!.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var response = await client.GetAsync(Path(path + int.MaxValue.ToString(CultureInfo.InvariantCulture)));
+
+        var errors = await ReadProblemAsync(response, HttpStatusCode.NotFound);
+        errors.ShouldBe([message]);
+    }
+
+    // ------------------- DOMENII SI FILTRE -------------------
+
+    [SkippableFact]
+    public async Task DomeniuEditat_SePoateDezactivaDebifandCasuta()
+    {
+        // Proprietatea IsActive porneste de la true in DomainFormModel. O casuta debifata nu
+        // se trimite deloc, deci fara campul ascuns "false" pus de tag helper la finalul
+        // formularului domeniul ar ramane activ. Formularul vine dintr-un partial comun.
+        Skip.IfNot(_sql.IsAvailable, _sql.SkipReason);
+
+        using var client = _factory!.CreateClient();
+
+        var form = await client.GetStringAsync(Path($"/Domain/Edit/{_seed.DomainId}"));
+
+        form.ShouldContain("name=\"IsActive\" type=\"hidden\" value=\"false\"");
+    }
+
+    [SkippableFact]
+    public async Task DomeniuEditat_SeSalveazaPrinRaspunsulComun()
+    {
+        Skip.IfNot(_sql.IsAvailable, _sql.SkipReason);
+
+        using var client = _factory!.CreateClient();
+        var newName = $"domeniu-{_seed.Suffix}-redenumit";
+        using var response = await PostFromPageAsync(
+            client, "/Domain/Index", $"/Domain/Edit/{_seed.DomainId}",
+            new KeyValuePair<string, string>("DomainName", newName),
+            new KeyValuePair<string, string>("IsActive", "true"));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await response.Content.ReadAsStringAsync()).ShouldContain("\"success\":true");
+        await using var db = _sql.CreateDbContext();
+        (await db.Domains.SingleAsync(d => d.DomainId == _seed.DomainId)).DomainName.ShouldBe(newName);
+    }
+
+    [SkippableFact]
+    public async Task FiltrulDinDetaliileRolului_AjungeLaServer()
+    {
+        // Inainte, termenul nu era citit de controller: lista ramanea aceeasi.
+        Skip.IfNot(_sql.IsAvailable, _sql.SkipReason);
+
+        using var client = _factory!.CreateClient();
+
+        var match = await client.GetStringAsync(Path($"/AppRoles/Details/{_seed.RoleId}?claimSearchInRole=DREPT-{_seed.Suffix}"));
+        var noMatch = await client.GetStringAsync(Path($"/AppRoles/Details/{_seed.RoleId}?claimSearchInRole=nimic-{_seed.Suffix}"));
+
+        match.ShouldContain($"<td>drept-{_seed.Suffix}</td>");
+        noMatch.ShouldNotContain($"<td>drept-{_seed.Suffix}</td>");
+        noMatch.ShouldContain($"value=\"nimic-{_seed.Suffix}\"");
     }
 
     public void Dispose() => _factory?.Dispose();
 
     private static Uri Path(string relative) => new(relative, UriKind.Relative);
 
+    private static KeyValuePair<string, string> Id(int id) => new("id", id.ToString(CultureInfo.InvariantCulture));
+
     /// <summary>
     /// Trimite un POST asa cum il trimite JS-ul din pagina: cu primul token antiforgery
     /// gasit in HTML. Pe o pagina autentificata il pune formularul de logout din layout,
     /// de unde il ia si <c>getToken()</c> cand nu e deschis niciun modal.
     /// </summary>
-    private static async Task<string> PostFromPageAsync(HttpClient client, string pagePath, string actionPath, int id)
+    private static async Task<HttpResponseMessage> PostFromPageAsync(
+        HttpClient client,
+        string pagePath,
+        string actionPath,
+        params KeyValuePair<string, string>[] fields)
     {
         var page = await client.GetStringAsync(Path(pagePath));
         var token = Regex.Match(page, """name="__RequestVerificationToken"[^>]*value="([^"]+)""").Groups[1].Value;
         token.ShouldNotBeEmpty($"{pagePath} nu randeaza token-ul antiforgery");
 
         using var body = new FormUrlEncodedContent(
-        [
-            new KeyValuePair<string, string>("id", id.ToString(CultureInfo.InvariantCulture)),
-            new KeyValuePair<string, string>("__RequestVerificationToken", token)
-        ]);
+            [.. fields, new KeyValuePair<string, string>("__RequestVerificationToken", token)]);
 
-        var response = await client.PostAsync(Path(actionPath), body);
-        response.StatusCode.ShouldBe(HttpStatusCode.OK, $"{actionPath} a raspuns {response.StatusCode}");
-        return await response.Content.ReadAsStringAsync();
+        return await client.PostAsync(Path(actionPath), body);
+    }
+
+    /// <summary>
+    /// Verifica forma comuna a unui esec (vezi <c>AjaxResponseExtensions</c>) si intoarce
+    /// mesajele pe care JS-ul le afiseaza.
+    /// </summary>
+    private static async Task<string[]> ReadProblemAsync(HttpResponseMessage response, HttpStatusCode expected)
+    {
+        var content = await response.Content.ReadAsStringAsync();
+        response.StatusCode.ShouldBe(expected, content);
+        response.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
+
+        using var json = JsonDocument.Parse(content);
+        var root = json.RootElement;
+        root.GetProperty("status").GetInt32().ShouldBe((int)expected);
+        root.GetProperty("success").GetBoolean().ShouldBeFalse();
+        root.GetProperty("traceId").GetString().ShouldNotBeNullOrWhiteSpace();
+
+        return [.. root.GetProperty("errors").EnumerateArray().Select(e => e.GetString()!)];
     }
 
     private async Task<SeededData> SeedAsync()

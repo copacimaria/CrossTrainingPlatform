@@ -8,15 +8,18 @@ public sealed class SecurityHeadersMiddleware
     /// <summary>
     /// Politica de continut.
     ///
-    /// Aplicatia nu are niciun bloc &lt;script&gt; inline - tot JS-ul sta in fisiere din
-    /// wwwroot - dar view-urile de administrare folosesc inca 29 de atribute onclick,
-    /// pe care CSP le blocheaza fara 'unsafe-inline'. Pana cand acelea devin
-    /// addEventListener, script-src ramane relaxat; restul directivelor sunt stricte si
-    /// blocheaza deja incarcarea de script, stil sau continut din alte origini.
+    /// script-src 'self', fara 'unsafe-inline': browserul ruleaza doar fisierele din
+    /// wwwroot. Un script injectat in pagina (un bloc &lt;script&gt;, un onclick=..., un
+    /// href="javascript:...") nu se executa, chiar daca ar scapa de codificarea Razor.
+    /// View-urile nu au handler-e inline: comportamentul vine din atribute data-*, legate
+    /// de admin.js. Testul InlineScriptScanner verifica asta pe paginile randate.
+    ///
+    /// style-src pastreaza 'unsafe-inline': view-urile si Bootstrap folosesc atribute
+    /// style, iar un stil injectat nu poate rula cod.
     /// </summary>
     private const string ContentSecurityPolicy =
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline'; " +
+        "script-src 'self'; " +
         "style-src 'self' 'unsafe-inline'; " +
         "img-src 'self' data:; " +
         "font-src 'self'; " +

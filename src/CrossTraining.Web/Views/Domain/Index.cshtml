@@ -1,43 +1,108 @@
 @model List<DomainDto>
 @{
-    ViewData["Title"] = "Domains";
+    ViewData["Title"] = "Domenii";
 
-    // Lista se vede cu domains.view; legaturile de modificare duc la actiuni care cer
+    // Lista se vede cu domains.view; butoanele de modificare duc la actiuni care cer
     // domains.manage, deci apar doar pentru cine are acel drept.
     var canManage = User.HasPermission(Permissions.Domains.Manage);
 }
 
-<h2>Domains</h2>
-@if (canManage)
-{
-    <a asp-action="Create">Create New Domain</a>
-}
+<br /><br />
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Active</th>
-            @if (canManage)
-            {
-                <th>Actions</th>
-            }
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
+<!-- Modale -->
+<div class="modal fade" id="createDomainModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog admin-modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Creare domeniu:</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editDomainModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog admin-modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editeaza domeniul:</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteDomainModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog admin-modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmare stergere domeniu</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body"></div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center admin-header">
+    <h1 class="mb-0">Domenii</h1>
+    @if (canManage)
+    {
+        <button type="button" data-modal-url="@Url.Action("Create")" data-modal="#createDomainModal"
+                class="btn btn-dark fw-bold">
+            <i class="bi bi-plus-circle me-2"></i> Creeaza un domeniu nou
+        </button>
+    }
+</div>
+
+<div class="col">
+    <table class="table table-hover">
+        <thead>
             <tr>
-                <td>@item.DomainName</td>
-                <td>@(item.IsActive ? "Yes" : "No")</td>
-                @if (canManage)
-                {
-                    <td>
-                        <a asp-action="Edit" asp-route-id="@item.DomainId">Edit</a> |
-                        <a asp-action="Delete" asp-route-id="@item.DomainId">Delete</a>
-                    </td>
-                }
+                <th class="fw-bold">Nume domeniu</th>
+                <th class="fw-bold">Stare</th>
+                <th></th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr class="@(item.IsActive ? "" : "admin-row-inactive")">
+                    <td>@item.DomainName</td>
+                    <td>
+                        @if (item.IsActive)
+                        {
+                            <span class="badge bg-success">Activ</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Dezactivat</span>
+                        }
+                    </td>
+                    <td>
+                        @* Atributele data-* le leaga admin.js (vezi AppClaims/Index). Un domeniu
+                           dezactivat se reactiveaza din editare (casuta "Activ"). *@
+                        @if (canManage)
+                        {
+                            <button type="button" class="edit-link" title="Editeaza"
+                                    data-modal-url="@Url.Action("Edit", new { id = item.DomainId })"
+                                    data-modal="#editDomainModal">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                        }
+                        @if (canManage && item.IsActive)
+                        {
+                            <button type="button" class="delete-link" title="Sterge"
+                                    data-modal-url="@Url.Action("Delete", new { id = item.DomainId })"
+                                    data-modal="#deleteDomainModal">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

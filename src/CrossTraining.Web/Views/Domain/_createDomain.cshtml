@@ -1,26 +1,10 @@
 @model DomainFormModel
-@{
-    ViewData["Title"] = "Create Domain";
-}
 
-<h2>Create Domain</h2>
+@* Trimis de admin.js (data-ajax-form). Tag helper-ul <form> pune si token-ul antiforgery. *@
+<form asp-action="Create" method="post" data-ajax-form data-toast="Domeniul a fost creat!" data-toast-color="grey">
+    <partial name="_DomainFields" model="Model" />
 
-<form asp-action="Create" method="post">
-    <div class="form-group">
-        <label>Domain Name</label>
-        <input asp-for="DomainName" />
-        <span asp-validation-for="DomainName"></span>
+    <div class="d-flex justify-content-center">
+        <button type="submit" class="btn btn-success">Adauga</button>
     </div>
-
-    <div class="form-group">
-        <label>Is Active</label>
-        <input asp-for="IsActive" type="checkbox" />
-    </div>
-
-    <button type="submit">Save</button>
-    <a asp-action="Index">Cancel</a>
 </form>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}

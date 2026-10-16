@@ -27,17 +27,29 @@ public class AppRolesController : Controller
         // Filtrarea pe IsActive nu se mai scrie aici: o face filtrul global de
         // soft-delete. Paginarea si cautarea coboara in baza de date.
         var result = await _sender.Send(new SearchRolesQuery(roleSearch, Math.Max(page ?? 1, 1), PageSize));
+
+        // Termenul ramane in casuta de cautare si in legaturile de paginare.
+        ViewBag.SelectedRole = roleSearch;
         return View(result.ToPagedList());
     }
 
-    public async Task<IActionResult> Details(int id)
+    public async Task<IActionResult> Details(int id, string? claimSearchInRole)
     {
         var role = await _sender.Send(new GetRoleQuery(id));
         if (role == null)
             return NotFound();
 
+        // Drepturile unui rol sunt putine si vin deja toate din baza; filtrul de pe pagina
+        // (care inainte nu ajungea la server) se aplica pe lista lor.
         var claims = await _sender.Send(new GetRoleClaimsQuery(id));
+        if (!string.IsNullOrWhiteSpace(claimSearchInRole))
+        {
+            claims = claims
+                .Where(c => c.ClaimName.Contains(claimSearchInRole.Trim(), StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
 
+        ViewBag.SelectedClaim = claimSearchInRole;
         return View(new RoleClaimsViewModel
         {
             Role = role,
@@ -55,10 +67,10 @@ public class AppRolesController : Controller
     public async Task<IActionResult> Create(RoleFormModel form)
     {
         if (!ModelState.IsValid)
-            return Json(new { success = false, errors = ModelState.ErrorMessages() });
+            return this.AjaxInvalidForm();
 
         var result = await _sender.Send(new CreateRoleCommand(form.RoleName));
-        return result.ToJsonResult();
+        return this.AjaxOutcome(result);
     }
 
     [HttpGet]
@@ -67,7 +79,7 @@ public class AppRolesController : Controller
     {
         var role = await _sender.Send(new GetRoleQuery(id));
         if (role == null)
-            return Json(new { success = false, message = "Rolul nu exista." });
+            return this.AjaxNotFound("Rolul nu exista.");
 
         return PartialView("_EditRole", new RoleFormModel
         {
@@ -82,10 +94,10 @@ public class AppRolesController : Controller
     public async Task<IActionResult> Edit(int id, RoleFormModel form)
     {
         if (!ModelState.IsValid)
-            return Json(new { success = false, errors = ModelState.ErrorMessages() });
+            return this.AjaxInvalidForm();
 
         var result = await _sender.Send(new RenameRoleCommand(id, form.RoleName));
-        return result.ToJsonResult();
+        return this.AjaxOutcome(result);
     }
 
     [HasPermission(Permissions.Roles.Manage)]
@@ -93,7 +105,7 @@ public class AppRolesController : Controller
     {
         var role = await _sender.Send(new GetRoleQuery(id));
         if (role == null)
-            return Json(new { success = false, message = "Rolul nu exista." });
+            return this.AjaxNotFound("Rolul nu exista.");
 
         return PartialView("_DeleteRole", role);
     }
@@ -104,7 +116,7 @@ public class AppRolesController : Controller
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var result = await _sender.Send(new DeactivateRoleCommand(id));
-        return result.ToJsonResult();
+        return this.AjaxOutcome(result);
     }
 
     [HttpPost]
@@ -113,7 +125,7 @@ public class AppRolesController : Controller
     public async Task<IActionResult> Reactivate(int id)
     {
         var result = await _sender.Send(new ReactivateRoleCommand(id));
-        return result.ToJsonResult();
+        return this.AjaxOutcome(result);
     }
 
     // ------------------- ACORDARE / REVOCARE DREPT -------------------
@@ -123,7 +135,7 @@ public class AppRolesController : Controller
     {
         var role = await _sender.Send(new GetRoleQuery(id));
         if (role == null)
-            return Json(new { success = false, message = "Rolul nu a fost gasit." });
+            return this.AjaxNotFound("Rolul nu exista.");
 
         return PartialView("_addClaimInRole", new RoleClaimsViewModel { Role = role });
     }
@@ -146,7 +158,7 @@ public class AppRolesController : Controller
     public async Task<IActionResult> AddClaim(int roleId, int claimId)
     {
         var result = await _sender.Send(new GrantClaimToRoleCommand(roleId, claimId));
-        return result.ToJsonResult();
+        return this.AjaxOutcome(result);
     }
 
     [HttpPost]
@@ -155,6 +167,6 @@ public class AppRolesController : Controller
     public async Task<IActionResult> RemoveClaim(int roleId, int claimId)
     {
         var result = await _sender.Send(new RevokeClaimFromRoleCommand(roleId, claimId));
-        return result.ToJsonResult();
+        return this.AjaxOutcome(result);
     }
 }

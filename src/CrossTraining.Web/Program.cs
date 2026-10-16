@@ -84,7 +84,7 @@ if (knownProxies.Length > 0)
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
         options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-        options.KnownNetworks.Clear();
+        options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
         foreach (var proxy in knownProxies)
             options.KnownProxies.Add(IPAddress.Parse(proxy));

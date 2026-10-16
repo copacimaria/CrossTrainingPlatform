@@ -65,7 +65,7 @@
     <h1 class="mb-0">Claim-uri</h1>
     @if (canManage)
     {
-        <button onclick="loadCreateClaim()" data-bs-toggle="modal" data-bs-target="#createClaimModal"
+        <button type="button" data-modal-url="@Url.Action("Create")" data-modal="#createClaimModal"
                 class="btn btn-dark fw-bold">
             <i class="bi bi-plus-circle me-2"></i> Creeaza un nou claim
         </button>
@@ -75,19 +75,19 @@
 <div class="col">
     <!-- Filtre -->
     <div class="d-flex mb-3">
-        <form method="get" class="d-flex gap-3 admin-filter-form">
+        <form asp-action="Index" method="get" class="d-flex gap-3 admin-filter-form">
             <div>
                 <label for="claimSearch" class="form-label mb-0 admin-filter-label">Cauta un claim:</label>
                 <input type="text" id="claimSearch" name="claimSearch" placeholder="Cauta dupa nume"
                        class="form-control form-control-sm admin-filter-input"
                        value="@(ViewBag.SelectedClaim ?? "")" />
             </div>
-            <button type="button" class="btn btn-success mt-4 fw-bold" onclick="searchClaim()">
+            <button type="submit" class="btn btn-success mt-4 fw-bold">
                 <i class="bi bi-search"></i> Filtreaza
             </button>
-            <button type="button" class="btn btn-danger mt-4 fw-bold" onclick="resetClaimFilters()">
+            <a asp-action="Index" class="btn btn-danger mt-4 fw-bold">
                 <i class="bi bi-x-circle"></i> Reseteaza
-            </button>
+            </a>
         </form>
     </div>
 
@@ -122,32 +122,38 @@
                             }
                         </td>
                         <td>
-                            <button data-bs-toggle="modal" data-bs-target="#detailsClaimModal"
-                                    onclick="viewRolesInClaim(@item.ClaimId)" class="view-link">
+                            @* Fara onclick: atributele data-* le leaga admin.js (vezi comentariul
+                               de la inceputul fisierului), iar CSP-ul interzice scripturile inline. *@
+                            <button type="button" class="view-link" title="Detalii"
+                                    data-modal-url="@Url.Action("Details", new { id = item.ClaimId })"
+                                    data-modal="#detailsClaimModal">
                                 <i class="bi bi-eye-fill"></i>
                             </button>
                             @if (canManage && !item.IsSystem)
                             {
-                                <button data-bs-toggle="modal" data-bs-target="#editClaimModal"
-                                        onclick="loadEditClaim(@item.ClaimId)" class="edit-link">
+                                <button type="button" class="edit-link" title="Editeaza"
+                                        data-modal-url="@Url.Action("Edit", new { id = item.ClaimId })"
+                                        data-modal="#editClaimModal">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
                             }
                             @if (canManage && !item.IsSystem && item.IsActive)
                             {
-                                <button data-bs-toggle="modal" data-bs-target="#deleteClaimModal"
-                                        onclick="loadDeleteClaim(@item.ClaimId)" class="delete-link">
+                                <button type="button" class="delete-link" title="Sterge"
+                                        data-modal-url="@Url.Action("Delete", new { id = item.ClaimId })"
+                                        data-modal="#deleteClaimModal">
                                     <i class="bi bi-trash3"></i>
                                 </button>
                             }
                             @if (canManage && !item.IsActive)
                             {
-                                @* Listener delegat in appclaims.js, nu onclick: CSP-ul va putea
-                                   renunta la 'unsafe-inline' fara ca butonul asta sa se strice. *@
-                                <button type="button" class="reactivate-link" title="Reactiveaza"
-                                        data-reactivate-claim="@item.ClaimId" data-name="@item.ClaimName">
-                                    <i class="bi bi-arrow-counterclockwise"></i>
-                                </button>
+                                <form asp-action="Reactivate" asp-route-id="@item.ClaimId" method="post" class="d-inline"
+                                      data-ajax-form data-toast="Claim-ul a fost reactivat!" data-toast-color="green"
+                                      data-confirm="@($"Reactivati claim-ul \"{item.ClaimName}\"? Rolurile care il aveau il primesc inapoi.")">
+                                    <button type="submit" class="reactivate-link" title="Reactiveaza">
+                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                    </button>
+                                </form>
                             }
                         </td>
                     </tr>
@@ -160,7 +166,3 @@
         @Html.PagedListPager(Model, page => Url.Action("Index", "AppClaims", new { page, claimSearch = ViewBag.SelectedClaim }))
     </div>
 </div>
-
-@section Scripts {
-    <script src="~/js/appclaims.js" asp-append-version="true"></script>
-}

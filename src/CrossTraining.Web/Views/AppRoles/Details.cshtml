@@ -38,8 +38,8 @@
     <h1 class="mb-0">Rolul: @Model.Role.RoleName</h1>
     @if (canManage)
     {
-        <button onclick="loadAddClaim('@Model.Role.RoleId')" data-bs-toggle="modal" data-bs-target="#addClaimModal"
-                class="btn btn-dark fw-bold">
+        <button type="button" data-modal-url="@Url.Action("AddClaim", new { id = Model.Role.RoleId })"
+                data-modal="#addClaimModal" class="btn btn-dark fw-bold">
             <i class="bi bi-plus-circle me-2"></i> Adauga drepturi in rol
         </button>
     }
@@ -54,21 +54,20 @@
 
 <div class="col admin-text-light">
     <!-- Filtre -->
-    <div class="d-flex mb-3 gap-3 admin-filter-form">
+    <form asp-action="Details" asp-route-id="@Model.Role.RoleId" method="get" class="d-flex mb-3 gap-3 admin-filter-form">
         <div>
-            <input type="hidden" id="roleId" value="@Model.Role.RoleId" />
             <label for="claimSearchInRole" class="form-label mb-0 admin-filter-label">Cauta claim:</label>
             <input type="text" id="claimSearchInRole" name="claimSearchInRole" placeholder="Cauta dupa nume"
                    class="form-control form-control-sm admin-filter-input"
                    value="@(ViewBag.SelectedClaim ?? "")" />
         </div>
-        <button type="button" class="btn btn-success mt-4 fw-bold" onclick="searchClaimInRole()">
+        <button type="submit" class="btn btn-success mt-4 fw-bold">
             <i class="bi bi-search"></i> Filtreaza
         </button>
-        <button type="button" class="btn btn-danger mt-4 fw-bold" onclick="resetClaimInRoleFilters()">
+        <a asp-action="Details" asp-route-id="@Model.Role.RoleId" class="btn btn-danger mt-4 fw-bold">
             <i class="bi bi-x-circle"></i> Reseteaza
-        </button>
-    </div>
+        </a>
+    </form>
 
     <table class="table table-hover admin-text-light">
         <thead>
@@ -87,9 +86,14 @@
                         <td>
                             @if (canManage && !(isAdminRole && item.IsSystem))
                             {
-                                <button onclick="loadRemoveClaim('@item.ClaimId', '@Model.Role.RoleId')" class="delete-link">
-                                    <i class="bi bi-dash-circle"></i>
-                                </button>
+                                <form asp-action="RemoveClaim" method="post" class="d-inline"
+                                      data-ajax-form data-toast="Dreptul a fost eliminat!" data-toast-color="red">
+                                    <input type="hidden" name="roleId" value="@Model.Role.RoleId" />
+                                    <input type="hidden" name="claimId" value="@item.ClaimId" />
+                                    <button type="submit" class="delete-link" title="Elimina din rol">
+                                        <i class="bi bi-dash-circle"></i>
+                                    </button>
+                                </form>
                             }
                         </td>
                     </tr>

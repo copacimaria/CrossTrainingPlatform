@@ -20,3 +20,4 @@ un ADR nou care il marcheaza pe cel vechi ca `Superseded`.
 | [0009](0009-protectia-drepturilor-si-rolurilor-de-sistem.md) | Protectia drepturilor si rolurilor de sistem | Acceptat |
 | [0010](0010-domeniu-bogat-si-o-singura-sursa-pentru-invarianti.md) | Domeniu bogat si o singura sursa pentru invarianti | Acceptat |
 | [0011](0011-erori-logging-si-configurare-pentru-productie.md) | Erori, logging si configurare pentru productie | Acceptat |
+| [0012](0012-raspunsuri-ajax-si-comportament-declarativ.md) | Raspunsuri AJAX uniforme si comportament declarativ in view-uri | Acceptat |

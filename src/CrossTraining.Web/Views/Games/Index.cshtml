@@ -54,15 +54,17 @@
                 <div class="flip-card-front">
                     @if (User.HasPermission(Permissions.Games.Manage))
                     {
+                        @* Atributele data-* le leaga admin.js; games.js nu intoarce cardul la
+                           click pe ele. *@
                         <div class="card-actions">
-                            <button data-bs-toggle="modal" data-bs-target="#editGameModal"
-                                    onclick="event.stopPropagation(); loadEditgame(@game.GameId)"
-                                    class="edit-link">
+                            <button type="button" class="edit-link" title="Editeaza"
+                                    data-modal-url="@Url.Action("Edit", new { id = game.GameId })"
+                                    data-modal="#editGameModal">
                                 <i class="bi bi-pencil-square"></i>
                             </button>
-                            <button data-bs-toggle="modal" data-bs-target="#deleteGameModal"
-                                    onclick="event.stopPropagation(); loadDeleteGame(@game.GameId)"
-                                    class="delete-link">
+                            <button type="button" class="delete-link" title="Sterge"
+                                    data-modal-url="@Url.Action("Delete", new { id = game.GameId })"
+                                    data-modal="#deleteGameModal">
                                 <i class="bi bi-trash3"></i>
                             </button>
                         </div>
@@ -112,8 +114,8 @@
 
     @if (User.HasPermission(Permissions.Games.Manage))
     {
-        <div class="game-card add-game-card" onclick="loadCreateGame()"
-             data-bs-toggle="modal" data-bs-target="#createGameModal">
+        <div class="game-card add-game-card" role="button" tabindex="0" aria-label="Adauga un joc"
+             data-modal-url="@Url.Action("Create")" data-modal="#createGameModal">
             <div class="add-game-inner">
                 <i class="bi bi-plus-lg"></i>
             </div>

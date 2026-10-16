@@ -46,12 +46,12 @@ public class GamesController : Controller
     public async Task<IActionResult> Create(GameFormModel form)
     {
         if (!ModelState.IsValid)
-            return Json(new { success = false, errors = ModelState.ErrorMessages() });
+            return this.AjaxInvalidForm();
 
         var result = await _sender.Send(new CreateGameCommand(
             form.GameName, form.Description, form.DownloadLink, form.DomainId));
 
-        return result.ToJsonResult();
+        return this.AjaxOutcome(result);
     }
 
     [HttpGet]
@@ -60,7 +60,7 @@ public class GamesController : Controller
     {
         var game = await _sender.Send(new GetGameQuery(id));
         if (game == null)
-            return NotFound();
+            return this.AjaxNotFound("Jocul nu exista.");
 
         await PopulateDomainsAsync(game.DomainId);
         return PartialView("_EditGame", GameFormModel.FromDto(game));
@@ -72,12 +72,12 @@ public class GamesController : Controller
     public async Task<IActionResult> Edit(int id, GameFormModel form)
     {
         if (!ModelState.IsValid)
-            return Json(new { success = false, errors = ModelState.ErrorMessages() });
+            return this.AjaxInvalidForm();
 
         var result = await _sender.Send(new UpdateGameCommand(
             id, form.GameName, form.Description, form.DownloadLink, form.DomainId));
 
-        return result.ToJsonResult();
+        return this.AjaxOutcome(result);
     }
 
     [HttpGet]
@@ -86,7 +86,7 @@ public class GamesController : Controller
     {
         var game = await _sender.Send(new GetGameQuery(id));
         if (game == null)
-            return NotFound();
+            return this.AjaxNotFound("Jocul nu exista.");
 
         return PartialView("_DeleteGame", game);
     }
@@ -97,7 +97,7 @@ public class GamesController : Controller
     public async Task<IActionResult> PostDelete(int gameId)
     {
         var result = await _sender.Send(new DeactivateGameCommand(gameId));
-        return result.ToJsonResult();
+        return this.AjaxOutcome(result);
     }
 
     private async Task PopulateDomainsAsync(int? selectedId = null)

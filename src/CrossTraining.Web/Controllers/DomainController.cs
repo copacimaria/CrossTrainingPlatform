@@ -1,6 +1,7 @@
 using CrossTraining.Application.Features.Domains;
 using CrossTraining.Application.Features.Users;
 using CrossTraining.Domain.Authorization;
+using CrossTraining.Web.Extensions;
 using CrossTraining.Web.Models;
 using CrossTraining.Web.Security;
 using MediatR;
@@ -27,12 +28,14 @@ public class DomainController : Controller
     }
 
     // ------------------- ADMIN CRUD -------------------
+    // Acelasi stil ca la drepturi si roluri: formularele se deschid in modale, se trimit
+    // prin admin.js, iar raspunsul este cel comun din AjaxResponseExtensions.
     public async Task<IActionResult> Index()
         => View(await _sender.Send(new GetAllDomainsForAdminQuery()));
 
     [HttpGet]
     [HasPermission(Permissions.Domains.Manage)]
-    public IActionResult Create() => View("_createDomain", new DomainFormModel());
+    public IActionResult Create() => PartialView("_createDomain", new DomainFormModel());
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -40,16 +43,10 @@ public class DomainController : Controller
     public async Task<IActionResult> Create(DomainFormModel form)
     {
         if (!ModelState.IsValid)
-            return View("_createDomain", form);
+            return this.AjaxInvalidForm();
 
         var result = await _sender.Send(new CreateDomainCommand(form.DomainName, form.IsActive));
-        if (!result.Succeeded)
-        {
-            ModelState.AddModelError(nameof(form.DomainName), result.Error!);
-            return View("_createDomain", form);
-        }
-
-        return RedirectToAction("Index");
+        return this.AjaxOutcome(result);
     }
 
     [HttpGet]
@@ -58,9 +55,9 @@ public class DomainController : Controller
     {
         var domain = await _sender.Send(new GetDomainQuery(id));
         if (domain == null)
-            return NotFound();
+            return this.AjaxNotFound("Domeniul nu exista.");
 
-        return View("_editDomain", DomainFormModel.FromDto(domain));
+        return PartialView("_editDomain", DomainFormModel.FromDto(domain));
     }
 
     [HttpPost]
@@ -69,16 +66,10 @@ public class DomainController : Controller
     public async Task<IActionResult> Edit(int id, DomainFormModel form)
     {
         if (!ModelState.IsValid)
-            return View("_editDomain", form);
+            return this.AjaxInvalidForm();
 
         var result = await _sender.Send(new UpdateDomainCommand(id, form.DomainName, form.IsActive));
-        if (!result.Succeeded)
-        {
-            ModelState.AddModelError(nameof(form.DomainName), result.Error!);
-            return View("_editDomain", form);
-        }
-
-        return RedirectToAction("Index");
+        return this.AjaxOutcome(result);
     }
 
     [HttpGet]
@@ -87,21 +78,19 @@ public class DomainController : Controller
     {
         var domain = await _sender.Send(new GetDomainQuery(id));
         if (domain == null)
-            return NotFound();
+            return this.AjaxNotFound("Domeniul nu exista.");
 
-        return View("_deleteDomain", domain);
+        return PartialView("_deleteDomain", domain);
     }
 
-    [HttpPost, ActionName("Delete")]
+    /// <summary>Dezactiveaza domeniul. Nu se sterge fizic (vezi ADR-0007).</summary>
+    [HttpPost, ActionName("DeleteConfirmed")]
     [ValidateAntiForgeryToken]
     [HasPermission(Permissions.Domains.Manage)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         var result = await _sender.Send(new DeactivateDomainCommand(id));
-        if (!result.Succeeded)
-            return NotFound();
-
-        return RedirectToAction("Index");
+        return this.AjaxOutcome(result);
     }
 
     // ------------------- SELECT DOMAIN (flow de inregistrare) -------------------

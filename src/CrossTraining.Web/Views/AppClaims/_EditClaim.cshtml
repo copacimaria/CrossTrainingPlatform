@@ -1,21 +1,21 @@
 @model ClaimFormModel
-@Html.AntiForgeryToken()
 
-<div class="row justify-content-center">
-    <div class="col-sm-8">
-        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-        <input type="hidden" asp-for="ClaimId" />
+<form asp-action="Edit" asp-route-id="@Model.ClaimId" method="post"
+      data-ajax-form data-toast="Claim-ul a fost editat!" data-toast-color="green">
+    <div class="row justify-content-center">
+        <div class="col-sm-8">
+            <div class="alert alert-danger py-2" data-form-errors role="alert" hidden></div>
 
-        <div class="modal-form-group mb-3">
-            <label asp-for="ClaimName" class="control-label">Numele claim-ului:</label>
-            <input asp-for="ClaimName" id="claimNameEdit" class="form-control" />
-            <span asp-validation-for="ClaimName" class="text-danger"></span>
-        </div>
+            <div class="modal-form-group mb-3">
+                <label asp-for="ClaimName" class="control-label">Numele claim-ului:</label>
+                <input asp-for="ClaimName" class="form-control" required />
+            </div>
 
-        <br />
+            <br />
 
-        <div class="d-flex justify-content-center">
-            <button type="button" onclick="editClaim('@Model.ClaimId')" class="btn btn-success">Salveaza</button>
+            <div class="d-flex justify-content-center">
+                <button type="submit" class="btn btn-success">Salveaza</button>
+            </div>
         </div>
     </div>
-</div>
+</form>

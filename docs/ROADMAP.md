@@ -57,16 +57,14 @@ ca sa compileze sau sa functioneze.
   afle de ce nu merge. Pana intra trimiterea de email, mitigarea este rate limiting-ul
   de mai sus, care e activ si pe register. De reluat cand exista infrastructura de email.
 
-### Ramas din CSP
+### CSP efectiv ✅ (in etapa 9)
 
-CSP-ul are `script-src 'self' 'unsafe-inline'`, pentru ca view-urile de administrare
-folosesc **29 de atribute `onclick`** (in 14 fisiere) pe care politica le-ar bloca altfel.
-Nu exista niciun bloc `<script>` inline - tot JS-ul sta deja in fisiere - deci singurul
-lucru care mai lipseste este conversia acelor atribute in `addEventListener`. Dupa
-conversie, `'unsafe-inline'` se scoate din `script-src` si CSP-ul devine efectiv.
+CSP-ul avea `script-src 'self' 'unsafe-inline'`, pentru ca view-urile de administrare
+foloseau **29 de atribute `onclick`** (in 14 fisiere) pe care politica le-ar fi blocat.
 
-- [ ] Conversia celor 29 de handlere `onclick` in listeners delegati.
-- [ ] Scoaterea `'unsafe-inline'` din `script-src`.
+- [x] Atributele `onclick` inlocuite cu atribute `data-*`, legate de `admin.js`.
+- [x] `'unsafe-inline'` scos din `script-src`; un test randeaza paginile si pica la orice
+      script inline.
 
 ## Etapa 3 - Testabilitate ✅
 
@@ -298,7 +296,7 @@ emite. Pe o baza creata din migrari, un administrator nu vedea niciun buton de c
 editare sau stergere. Ecranul de jocuri folosea `User.IsInRole("Admin")`.
 
 Butoanele noi de reactivare folosesc listeners delegati, nu `onclick`. Numarul de
-atribute inline din sectiunea CSP de mai sus nu a crescut.
+atribute inline din sectiunea CSP de mai sus nu a crescut (in etapa 9 au fost scoase toate).
 
 ### Verificat, nu presupus
 
@@ -380,6 +378,62 @@ Vezi [ADR-0010](adr/0010-domeniu-bogat-si-o-singura-sursa-pentru-invarianti.md).
 - **Cookie-urile vechi devin invalide o data**, din cauza numelui de aplicatie fixat in
   Data Protection: utilizatorii se logheaza din nou.
 
+## Etapa 9 - .NET 10, raspunsuri de eroare uniforme, un singur stil de front-end ✅
+
+Vezi [ADR-0012](adr/0012-raspunsuri-ajax-si-comportament-declarativ.md).
+
+- [x] **.NET 10** (LTS, suport pana in noiembrie 2028). Pachetele Microsoft, EF Core si
+      instrumentul `dotnet-ef` la 10.0.13; `KnownNetworks` (scos din uz) devine
+      `KnownIPNetworks`.
+- [x] **`System.Security.Cryptography.Pkcs` fixat la 10.0.13**: dependinta tranzitiva a
+      `Microsoft.Data.SqlClient` aducea 9.0.11, cu doua vulnerabilitati de tip denial of
+      service (CVE-2026-84008, CVE-2026-70162).
+- [x] **Coduri HTTP cu sens pentru cererile din JS**: `400` pentru formular invalid si
+      refuz, `404` pentru o inregistrare lipsa, `500` pentru eroare neasteptata. Aceeasi
+      forma `ProblemDetails` peste tot (`success`, `errors`, `traceId`). Inainte, toate
+      plecau cu `200`.
+- [x] **Un singur fisier JS comun** (`admin.js`) in locul a patru fisiere cu cod copiat.
+      View-urile declara comportamentul prin atribute `data-*`; operatiile obisnuite nu mai
+      cer JS scris pe ecran.
+- [x] **Domeniile in acelasi stil** cu drepturile si rolurile: tabel cu stare, modale,
+      formulare AJAX. Inainte erau pagini separate, nestilizate.
+- [x] **CSP efectiv**: `script-src 'self'`, fara `'unsafe-inline'`.
+
+### Reparat pe parcurs
+
+- **Filtrul din detaliile unui rol nu facea nimic**: termenul nu ajungea la controller.
+- **Termenul cautat disparea** dupa filtrare in listele de drepturi si roluri, iar
+  paginarea pierdea filtrul (`ViewBag.SelectedClaim`/`SelectedRole` nu erau setate).
+- **Layout-ul cerea `CrossTraining.Web.styles.css`**, un fisier care nu exista (proiectul
+  nu are CSS izolat pe view). Fiecare pagina facea o cerere esuata; pentru un vizitator
+  neautentificat, cererea era redirectionata spre login.
+- **Modalele se deschideau de doua ori** (`data-bs-toggle` plus `new bootstrap.Modal()` in
+  JS), iar fundalurile ramase erau sterse manual la fiecare inchidere.
+- O sesiune expirata deschidea pagina de login in interiorul modalului; acum pagina se
+  reincarca si ajunge la login.
+
+### Verificat, nu presupus
+
+- Teste noi pe SQL Server real: `400` pentru formular invalid si nume duplicat, `404`
+  pentru modalele unei inregistrari lipsa (drepturi, roluri, jocuri, domenii), filtrul din
+  detaliile rolului, dezactivarea unui domeniu prin casuta debifata.
+- Teste noi fara baza: CSP-ul are exact `script-src 'self'`; paginile anonime si cele de
+  administrare (inclusiv modalele) nu au script inline; resursele referite de layout exista.
+- Validate prin mutatie (11): `onclick` intr-un modal, `<script>` inline in layout, un
+  `href="javascript:"`, `'unsafe-inline'` readus, refuz si formular invalid cu `200`,
+  inregistrare lipsa cu `400`, filtrul din detaliile rolului ignorat, termenul de cautare
+  pierdut, `NotFound()` gol pentru domenii, legatura spre `styles.css` readusa - fiecare
+  face cel putin un test sa pice.
+- `admin.js` verificat in browser, pe baza de test, pe toate ecranele: deschiderea
+  modalelor, erorile in modal (nume duplicat, link invalid), crearea, editarea, stergerea
+  si reactivarea cu mesajul de confirmare, autocomplete-ul de drepturi, filtrele, cardurile
+  de joc, tastatura pe cardul „+”. Nicio incalcare de CSP in consola.
+
+### Schimbari de comportament
+
+- Refuzurile apar ca `400` in tab-ul Network al browserului.
+- Ecranele de domenii sunt modale; stergerea se trimite la `POST /Domain/DeleteConfirmed/{id}`.
+
 ---
 
 ## Datorie tehnica fara etapa alocata
@@ -388,6 +442,7 @@ Vezi [ADR-0010](adr/0010-domeniu-bogat-si-o-singura-sursa-pentru-invarianti.md).
       amestecate ("Invalid email or password!" langa "Parola veche este incorecta!").
       De ales o limba pentru cod si de trecut mesajele de UI prin `IStringLocalizer`.
 - [x] ~~**Domeniu anemic.**~~ Rezolvat in etapa 8.
-- [ ] **Front-end**: sapte fisiere JS separate, fara bundling, fara minificare, fara
-      `asp-append-version` pentru cache busting.
-- [ ] **Trecerea la .NET 10**: .NET 8 iese din suport pe 10 noiembrie 2026.
+- [x] ~~**Front-end**: cod JS copiat intre fisiere.~~ Rezolvat in etapa 9 (`admin.js`).
+      Ramane: fara bundling si fara minificare (cache busting-ul exista, prin
+      `asp-append-version`).
+- [x] ~~**Trecerea la .NET 10**~~: facuta in etapa 9.
