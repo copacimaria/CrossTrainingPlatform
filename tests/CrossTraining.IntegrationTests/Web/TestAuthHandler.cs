@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
-using CrossTraining.Application.Authorization;
+using CrossTraining.Domain.Authorization;
 using CrossTraining.Web.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Configuration;

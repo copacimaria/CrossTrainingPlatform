@@ -1,4 +1,5 @@
 using CrossTraining.Domain.Entities;
+using CrossTraining.Domain.ValueObjects;
 using CrossTraining.Infrastructure.Persistence;
 using CrossTraining.Infrastructure.Repositories;
 
@@ -59,19 +60,12 @@ public class SoftDeleteAndPagingTests
 
         await using var db = _sql.CreateDbContext();
         var email = $"dezactivat-{Guid.NewGuid():N}@test.local";
-        db.Users.Add(new AppUser
-        {
-            Name = "X",
-            FamilyName = "Y",
-            Email = email,
-            PasswordHash = "$argon2id$fictiv",
-            IsActive = false
-        });
+        db.Users.Add(TestData.User(email, isActive: false));
         await db.SaveChangesAsync();
 
         var repository = new AppUserRepository(db);
 
-        (await repository.GetByEmailAsync(email)).ShouldBeNull();
+        (await repository.GetByEmailAsync(Email.Create(email).Value)).ShouldBeNull();
     }
 
     [SkippableFact]
@@ -83,17 +77,27 @@ public class SoftDeleteAndPagingTests
 
         await using var db = _sql.CreateDbContext();
         var email = $"ocupat-{Guid.NewGuid():N}@test.local";
-        db.Users.Add(new AppUser
-        {
-            Name = "X",
-            FamilyName = "Y",
-            Email = email,
-            PasswordHash = "$argon2id$fictiv",
-            IsActive = false
-        });
+        db.Users.Add(TestData.User(email, isActive: false));
         await db.SaveChangesAsync();
 
-        (await new AppUserRepository(db).EmailExistsAsync(email)).ShouldBeTrue();
+        (await new AppUserRepository(db).EmailExistsAsync(Email.Create(email).Value)).ShouldBeTrue();
+    }
+
+    [SkippableFact]
+    public async Task CautareaDupaEmail_NuTineContDeLitereleMariSauMici()
+    {
+        // Email este value object, convertit la string in baza. Comparatia trebuie sa se
+        // traduca in SQL, pe coloana, ca sa foloseasca aceeasi colatie ca indexul unic.
+        Skip.IfNot(_sql.IsAvailable, _sql.SkipReason);
+
+        await using var db = _sql.CreateDbContext();
+        var email = $"litere-{Guid.NewGuid():N}@test.local";
+        db.Users.Add(TestData.User(email));
+        await db.SaveChangesAsync();
+
+        var found = await new AppUserRepository(db).GetByEmailAsync(Email.Create(email.ToUpperInvariant()).Value);
+
+        found.ShouldNotBeNull().Email.Value.ShouldBe(email);
     }
 
     [SkippableFact]
@@ -104,15 +108,15 @@ public class SoftDeleteAndPagingTests
         Skip.IfNot(_sql.IsAvailable, _sql.SkipReason);
 
         await using var db = _sql.CreateDbContext();
-        var role = new AppRole { RoleName = Unique("rol"), IsActive = true };
-        var activ = new AppClaim { ClaimName = Unique("activ"), IsActive = true };
-        var inactiv = new AppClaim { ClaimName = Unique("inactiv"), IsActive = false };
+        var role = TestData.Role(Unique("rol"));
+        var activ = TestData.Claim(Unique("activ"));
+        var inactiv = TestData.Claim(Unique("inactiv"), isActive: false);
         db.Roles.Add(role);
         db.Claims.AddRange(activ, inactiv);
         await db.SaveChangesAsync();
 
-        db.RoleClaims.Add(new RoleClaim { RoleId = role.RoleId, ClaimId = activ.ClaimId });
-        db.RoleClaims.Add(new RoleClaim { RoleId = role.RoleId, ClaimId = inactiv.ClaimId });
+        db.RoleClaims.Add(new RoleClaim(role.RoleId, activ.ClaimId));
+        db.RoleClaims.Add(new RoleClaim(role.RoleId, inactiv.ClaimId));
         await db.SaveChangesAsync();
 
         var claims = await new AppRoleRepository(db).GetClaimsForRoleAsync(role.RoleId);
@@ -131,7 +135,7 @@ public class SoftDeleteAndPagingTests
         await using var db = _sql.CreateDbContext();
         var marker = Guid.NewGuid().ToString("N")[..8];
         for (int i = 0; i < 7; i++)
-            db.Claims.Add(new AppClaim { ClaimName = $"pag-{marker}-{i:D2}", IsActive = true });
+            db.Claims.Add(TestData.Claim($"pag-{marker}-{i:D2}"));
         await db.SaveChangesAsync();
 
         var repository = new AppClaimRepository(db);
@@ -157,8 +161,8 @@ public class SoftDeleteAndPagingTests
 
         await using var db = _sql.CreateDbContext();
         var marker = Guid.NewGuid().ToString("N")[..8];
-        db.Claims.Add(new AppClaim { ClaimName = $"adm-{marker}-activ", IsActive = true });
-        db.Claims.Add(new AppClaim { ClaimName = $"adm-{marker}-inactiv", IsActive = false });
+        db.Claims.Add(TestData.Claim($"adm-{marker}-activ"));
+        db.Claims.Add(TestData.Claim($"adm-{marker}-inactiv", isActive: false));
         await db.SaveChangesAsync();
 
         var result = await new AppClaimRepository(db).SearchForAdminAsync($"adm-{marker}", 1, 10);
@@ -169,11 +173,11 @@ public class SoftDeleteAndPagingTests
 
     // ------------------- helperi -------------------
 
-    private static string Unique(string prefix) => $"{prefix}-{Guid.NewGuid():N}";
+    private static string Unique(string prefix) => TestData.Unique(prefix);
 
     private static async Task<int> AddDomainAsync(AppDbContext db, bool isActive)
     {
-        var domain = new TrainingDomain { DomainName = Unique("domeniu"), IsActive = isActive };
+        var domain = TestData.Domain(Unique("domeniu"), isActive);
         db.Domains.Add(domain);
         await db.SaveChangesAsync();
         return domain.DomainId;

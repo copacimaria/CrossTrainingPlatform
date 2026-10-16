@@ -1,7 +1,6 @@
 using CrossTraining.Application.Abstractions.Messaging;
 using CrossTraining.Application.Abstractions.Persistence;
 using CrossTraining.Application.Common.Behaviors;
-using FluentValidation;
 using NSubstitute;
 
 namespace CrossTraining.UnitTests.Features;
@@ -10,52 +9,6 @@ namespace CrossTraining.UnitTests.Features;
 public sealed record SampleCommand(string Value) : ICommand<string>;
 
 public sealed record SampleQuery(string Value) : IQuery<string>;
-
-public sealed class SampleCommandValidator : AbstractValidator<SampleCommand>
-{
-    public SampleCommandValidator() => RuleFor(c => c.Value).NotEmpty();
-}
-
-public class ValidationBehaviorTests
-{
-    private static Task<string> Next() => Task.FromResult("ok");
-
-    [Fact]
-    public async Task CerereValida_AjungeLaHandler()
-    {
-        var behavior = new ValidationBehavior<SampleCommand, string>([new SampleCommandValidator()]);
-
-        var result = await behavior.Handle(new SampleCommand("ceva"), Next, default);
-
-        result.ShouldBe("ok");
-    }
-
-    [Fact]
-    public async Task CerereInvalida_NuAjungeLaHandler()
-    {
-        var behavior = new ValidationBehavior<SampleCommand, string>([new SampleCommandValidator()]);
-        var handlerWasCalled = false;
-
-        Task<string> next()
-        {
-            handlerWasCalled = true;
-            return Task.FromResult("ok");
-        }
-
-        await Should.ThrowAsync<ValidationException>(
-            () => behavior.Handle(new SampleCommand(""), next, default));
-
-        handlerWasCalled.ShouldBeFalse();
-    }
-
-    [Fact]
-    public async Task FaraValidatoare_TreceMaiDeparte()
-    {
-        var behavior = new ValidationBehavior<SampleCommand, string>([]);
-
-        (await behavior.Handle(new SampleCommand(""), Next, default)).ShouldBe("ok");
-    }
-}
 
 public class UnitOfWorkBehaviorTests
 {

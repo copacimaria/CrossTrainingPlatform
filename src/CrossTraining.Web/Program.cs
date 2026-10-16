@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Threading.RateLimiting;
 using CrossTraining.Application.DependencyInjection;
 using CrossTraining.Infrastructure.DependencyInjection;
@@ -6,6 +7,12 @@ using CrossTraining.Web.Middleware;
 using CrossTraining.Web.Security;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
+using Serilog;
+using Serilog.Events;
+using Serilog.Formatting.Compact;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +21,39 @@ var builder = WebApplication.CreateBuilder(args);
 // un Headers.Remove() din pipeline nu are ce sterge.
 builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 
+// ------------------- LOGGING -------------------
+// Serilog, cu evenimente structurate: proprietatile (UseCase, ElapsedMs, TraceId...) raman
+// campuri, nu text, deci se pot filtra. Nivelurile vin din sectiunea "Serilog" din
+// appsettings. preserveStaticLogger: fiecare host are logger-ul lui - testele pornesc
+// multe aplicatii in acelasi proces.
+builder.Services.AddSerilog(
+    (services, logger) =>
+    {
+        logger.ReadFrom.Configuration(builder.Configuration)
+              .ReadFrom.Services(services)
+              .Enrich.FromLogContext();
+
+        // Local: text lizibil. In rest: JSON compact, cate un eveniment pe linie, gata de
+        // colectat de orice sistem de agregare a log-urilor.
+        if (builder.Environment.IsDevelopment())
+        {
+            logger.WriteTo.Console(
+                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}",
+                formatProvider: CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            logger.WriteTo.Console(new RenderedCompactJsonFormatter());
+        }
+    },
+    preserveStaticLogger: true);
+
+// ------------------- ERORI -------------------
+// Erorile neasteptate din cererile trimise de JS primesc un ProblemDetails (JSON);
+// cererile de pagina ajung la /Home/Error. Vezi AjaxExceptionHandler.
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<AjaxExceptionHandler>();
+
 // MVC
 builder.Services.AddControllersWithViews();
 
@@ -21,11 +61,35 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// Semnarea id-ului de utilizator in fluxul de inregistrare (vezi RegistrationTokenProtector).
-// TODO(productie): cheile de Data Protection trebuie persistate intr-o locatie partajata,
-// altfel token-urile si cookie-urile devin invalide la fiecare repornire sau pe alt nod.
+// ------------------- DATA PROTECTION -------------------
+// Cheile semneaza cookie-ul de autentificare si token-ul din fluxul de inregistrare.
+// Numele de aplicatie fix le face independente de calea de instalare. Pe mai multe
+// instante, sau intr-un container, cheile trebuie sa stea intr-un loc comun si persistent
+// (DataProtection:KeysPath); altfel fiecare repornire delogheaza toti utilizatorii.
+var dataProtection = builder.Services.AddDataProtection().SetApplicationName("CrossTraining");
+var keysPath = builder.Configuration["DataProtection:KeysPath"];
+if (!string.IsNullOrWhiteSpace(keysPath))
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+
 builder.Services.AddSingleton<RegistrationTokenProtector>();
 builder.Services.AddScoped<RefreshUserPrincipal>();
+
+// ------------------- PROXY -------------------
+// In spatele unui reverse proxy, adresa clientului vine din X-Forwarded-For. Se accepta
+// doar de la proxy-urile declarate (ReverseProxy:KnownProxies): altfel oricine ar putea
+// trimite headerul si ar ocoli limitarea de incercari pe IP.
+var knownProxies = builder.Configuration.GetSection("ReverseProxy:KnownProxies").Get<string[]>() ?? [];
+if (knownProxies.Length > 0)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownNetworks.Clear();
+        options.KnownProxies.Clear();
+        foreach (var proxy in knownProxies)
+            options.KnownProxies.Add(IPAddress.Parse(proxy));
+    });
+}
 
 // Autentificare pe baza de cookie
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -99,6 +163,11 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
+// Primul in pipeline: tot ce urmeaza (rate limiting, HTTPS, log-uri) trebuie sa vada
+// adresa reala a clientului, nu pe cea a proxy-ului.
+if (knownProxies.Length > 0)
+    app.UseForwardedHeaders();
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -113,12 +182,39 @@ app.UseSecurityHeaders();
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+// Un rand de log per cerere (metoda, cale, status, durata), dupa fisierele statice ca sa
+// nu le numere si pe ele. Verificarile de sanatate se logheaza la nivelul cel mai jos:
+// un orchestrator le apeleaza la cateva secunde.
+app.UseSerilogRequestLogging(options =>
+{
+    // Logger-ul aplicatiei, nu Log.Logger: cel static ramane intentionat neconfigurat
+    // (preserveStaticLogger), iar fara asta randurile de cerere s-ar pierde.
+    options.Logger = app.Services.GetRequiredService<Serilog.ILogger>();
+    options.GetLevel = (httpContext, _, exception) =>
+        exception != null || httpContext.Response.StatusCode >= StatusCodes.Status500InternalServerError
+            ? LogEventLevel.Error
+            : httpContext.Request.Path.StartsWithSegments("/health")
+                ? LogEventLevel.Verbose
+                : LogEventLevel.Information;
+});
+
 app.UseRouting();
 
 app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// ------------------- SANATATE -------------------
+// /health: procesul raspunde (pentru repornire automata). /health/ready: aplicatia poate
+// servi cereri, adica ajunge la baza de date (pentru trimiterea de trafic). Anonime:
+// le apeleaza infrastructura, nu un utilizator.
+app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false })
+   .AllowAnonymous();
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains(InfrastructureServiceCollectionExtensions.ReadinessTag)
+}).AllowAnonymous();
 
 app.MapControllerRoute(
     name: "default",

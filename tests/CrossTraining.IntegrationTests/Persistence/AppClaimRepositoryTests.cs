@@ -124,11 +124,11 @@ public class AppClaimRepositoryTests
 
     // ------------------- helperi de seed -------------------
 
-    private static string Unique(string prefix) => $"{prefix}-{Guid.NewGuid():N}";
+    private static string Unique(string prefix) => TestData.Unique(prefix);
 
     private static async Task<int> AddRoleAsync(AppDbContext db)
     {
-        var role = new AppRole { RoleName = Unique("rol"), IsActive = true };
+        var role = TestData.Role(Unique("rol"));
         db.Roles.Add(role);
         await db.SaveChangesAsync();
         return role.RoleId;
@@ -136,7 +136,7 @@ public class AppClaimRepositoryTests
 
     private static async Task<int> AddClaimAsync(AppDbContext db, string name, bool isActive = true)
     {
-        var claim = new AppClaim { ClaimName = name, IsActive = isActive };
+        var claim = TestData.Claim(name, isActive);
         db.Claims.Add(claim);
         await db.SaveChangesAsync();
         return claim.ClaimId;
@@ -149,7 +149,7 @@ public class AppClaimRepositoryTests
         var attached = await AddClaimAsync(db, Unique(attachedName));
         var available = await AddClaimAsync(db, Unique(availableName));
 
-        db.RoleClaims.Add(new RoleClaim { RoleId = roleId, ClaimId = attached });
+        db.RoleClaims.Add(new RoleClaim(roleId, attached));
         await db.SaveChangesAsync();
 
         return (roleId, attached, available);

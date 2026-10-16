@@ -1,6 +1,6 @@
 using CrossTraining.Application.Abstractions.Persistence;
-using CrossTraining.Application.Authorization;
 using CrossTraining.Application.Features.Claims;
+using CrossTraining.Domain.Authorization;
 using CrossTraining.Domain.Entities;
 using NSubstitute;
 
@@ -18,7 +18,7 @@ public class ClaimCommandTests
     /// <summary>Un drept existent, gasit dupa id si - ca in SQL Server - dupa nume, fara diferenta de litere.</summary>
     private AppClaim Existing(int id, string name, bool isActive = true)
     {
-        var claim = new AppClaim { ClaimId = id, ClaimName = name, IsActive = isActive };
+        var claim = Loaded.Claim(id, name, isActive);
         _claims.GetForAdminAsync(id).Returns(claim);
         _claims.GetByNameForAdminAsync(Arg.Is<string>(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase)))
                .Returns(claim);
@@ -65,17 +65,17 @@ public class ClaimCommandTests
     }
 
     [Fact]
-    public async Task Rename_FaraNicioSchimbare_ReuseseFaraSaSalveze()
+    public async Task Rename_FaraNicioSchimbare_NuEsteRefuzat()
     {
         // Salvarea modalului de editare fara modificari nu e o redenumire - nici pentru
-        // un drept de sistem.
-        Existing(1, Permissions.Claims.View);
+        // un drept de sistem. (SaveChanges fara modificari nu trimite nimic la baza.)
+        var claim = Existing(1, Permissions.Claims.View);
 
         var result = await new RenameClaimHandler(_claims, _unitOfWork)
             .Handle(new RenameClaimCommand(1, Permissions.Claims.View), default);
 
         result.Succeeded.ShouldBeTrue();
-        await NothingWasSaved();
+        claim.ClaimName.ShouldBe(Permissions.Claims.View);
     }
 
     [Fact]

@@ -18,3 +18,5 @@ un ADR nou care il marcheaza pe cel vechi ca `Superseded`.
 | [0007](0007-migrari-si-soft-delete.md) | Migrari EF Core si soft-delete uniform | Acceptat |
 | [0008](0008-cqrs-si-autorizare-pe-drepturi.md) | CQRS cu MediatR si autorizare pe drepturi | Acceptat |
 | [0009](0009-protectia-drepturilor-si-rolurilor-de-sistem.md) | Protectia drepturilor si rolurilor de sistem | Acceptat |
+| [0010](0010-domeniu-bogat-si-o-singura-sursa-pentru-invarianti.md) | Domeniu bogat si o singura sursa pentru invarianti | Acceptat |
+| [0011](0011-erori-logging-si-configurare-pentru-productie.md) | Erori, logging si configurare pentru productie | Acceptat |

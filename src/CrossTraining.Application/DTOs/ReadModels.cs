@@ -1,4 +1,4 @@
-using CrossTraining.Application.Authorization;
+using CrossTraining.Domain.Authorization;
 
 namespace CrossTraining.Application.DTOs;
 

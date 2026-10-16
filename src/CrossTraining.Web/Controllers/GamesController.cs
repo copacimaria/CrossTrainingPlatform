@@ -1,7 +1,7 @@
-using CrossTraining.Application.Authorization;
 using CrossTraining.Application.DTOs;
 using CrossTraining.Application.Features.Domains;
 using CrossTraining.Application.Features.Games;
+using CrossTraining.Domain.Authorization;
 using CrossTraining.Web.Extensions;
 using CrossTraining.Web.Models;
 using CrossTraining.Web.Security;
@@ -48,10 +48,10 @@ public class GamesController : Controller
         if (!ModelState.IsValid)
             return Json(new { success = false, errors = ModelState.ErrorMessages() });
 
-        await _sender.Send(new CreateGameCommand(
+        var result = await _sender.Send(new CreateGameCommand(
             form.GameName, form.Description, form.DownloadLink, form.DomainId));
 
-        return Json(new { success = true, message = "Game created successfully!" });
+        return result.ToJsonResult();
     }
 
     [HttpGet]
@@ -74,10 +74,10 @@ public class GamesController : Controller
         if (!ModelState.IsValid)
             return Json(new { success = false, errors = ModelState.ErrorMessages() });
 
-        await _sender.Send(new UpdateGameCommand(
+        var result = await _sender.Send(new UpdateGameCommand(
             id, form.GameName, form.Description, form.DownloadLink, form.DomainId));
 
-        return Json(new { success = true, message = "Game updated successfully!" });
+        return result.ToJsonResult();
     }
 
     [HttpGet]
@@ -96,8 +96,8 @@ public class GamesController : Controller
     [HasPermission(Permissions.Games.Manage)]
     public async Task<IActionResult> PostDelete(int gameId)
     {
-        await _sender.Send(new DeactivateGameCommand(gameId));
-        return Json(new { success = true, message = "Game deleted successfully!" });
+        var result = await _sender.Send(new DeactivateGameCommand(gameId));
+        return result.ToJsonResult();
     }
 
     private async Task PopulateDomainsAsync(int? selectedId = null)

@@ -2,6 +2,7 @@ using CrossTraining.Application.Abstractions.Persistence;
 using CrossTraining.Application.Abstractions.Security;
 using CrossTraining.Application.Features.Authentication;
 using CrossTraining.Domain.Entities;
+using CrossTraining.Domain.ValueObjects;
 using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
 
@@ -16,6 +17,9 @@ public class RegisterUserTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly FakeTimeProvider _clock = new(Now);
 
+    public RegisterUserTests()
+        => _passwords.Hash(Arg.Any<AppUser>(), Arg.Any<string>()).Returns("$argon2id$hash");
+
     private RegisterUserHandler CreateSut() => new(_users, _passwords, _unitOfWork, _clock);
 
     private static RegisterUserCommand Command(string email, string password = "parola123")
@@ -24,7 +28,7 @@ public class RegisterUserTests
     [Fact]
     public async Task CandEmailulExista_Esueaza()
     {
-        _users.EmailExistsAsync("ocupat@example.com").Returns(true);
+        _users.EmailExistsAsync(Email.Create("ocupat@example.com").Value).Returns(true);
 
         var result = await CreateSut().Handle(Command("ocupat@example.com"), default);
 
@@ -41,21 +45,31 @@ public class RegisterUserTests
         // inserarea ar pica pe index.
         await CreateSut().Handle(Command("cineva@example.com"), default);
 
-        await _users.Received(1).EmailExistsAsync("cineva@example.com");
+        await _users.Received(1).EmailExistsAsync(Email.Create("cineva@example.com").Value);
+    }
+
+    [Fact]
+    public async Task EmailulEsteNormalizatInainteDeVerificareSiSalvare()
+    {
+        // " Ana@Example.COM " si "ana@example.com" sunt aceeasi adresa: verificarea de
+        // duplicat si contul salvat trebuie sa vada aceeasi valoare.
+        await CreateSut().Handle(Command("  Ana@Example.COM "), default);
+
+        await _users.Received(1).EmailExistsAsync(Email.Create("ana@example.com").Value);
+        CaptureAddedUser().Email.Value.ShouldBe("ana@example.com");
     }
 
     [Fact]
     public async Task StocheazaDoarHashul_NiciodataParolaInClar()
     {
-        _users.EmailExistsAsync(Arg.Any<string>()).Returns(false);
-        _passwords.Hash(Arg.Any<AppUser>(), "parola-mea").Returns("$argon2id$hash");
+        _passwords.Hash(Arg.Any<AppUser>(), "parola-mea").Returns("$argon2id$hash-special");
 
         var result = await CreateSut().Handle(Command("nou@example.com", "parola-mea"), default);
 
         result.Succeeded.ShouldBeTrue();
 
         var saved = CaptureAddedUser();
-        saved.PasswordHash.ShouldBe("$argon2id$hash");
+        saved.PasswordHash.ShouldBe("$argon2id$hash-special");
         saved.PasswordHash.ShouldNotContain("parola-mea");
     }
 
@@ -67,35 +81,30 @@ public class RegisterUserTests
         CaptureAddedUser().CreatedAt.ShouldBe(Now.UtcDateTime);
     }
 
-    private AppUser CaptureAddedUser()
-        => (AppUser)_users.ReceivedCalls()
-            .First(c => c.GetMethodInfo().Name == nameof(IAppUserRepository.Add))
-            .GetArguments()[0]!;
-}
-
-public class RegisterUserValidatorTests
-{
-    private readonly RegisterUserValidator _validator = new();
-
     [Theory]
     [InlineData("", "Popescu", "a@b.co", "parola123")]
     [InlineData("Ana", "", "a@b.co", "parola123")]
     [InlineData("Ana", "Popescu", "nu-e-email", "parola123")]
     [InlineData("Ana", "Popescu", "a@b.co", "scurt")]
-    public void CereriInvalide_SuntRespinse(string name, string familyName, string email, string password)
+    public async Task CereriInvalide_SuntRefuzateFaraSaSeSalvezeNimic(
+        string name,
+        string familyName,
+        string email,
+        string password)
     {
-        var result = _validator.Validate(new RegisterUserCommand(name, familyName, email, password));
+        // Regulile sunt ale domeniului (Email, AppUser), nu ale unui validator separat:
+        // trebuie respectate indiferent de unde vine cererea.
+        var result = await CreateSut().Handle(new RegisterUserCommand(name, familyName, email, password), default);
 
-        result.IsValid.ShouldBeFalse();
+        result.Succeeded.ShouldBeFalse();
+        result.Error.ShouldNotBeNullOrWhiteSpace();
+        _users.DidNotReceive().Add(Arg.Any<AppUser>());
     }
 
-    [Fact]
-    public void CerereValida_TreceDeValidare()
-    {
-        var result = _validator.Validate(new RegisterUserCommand("Ana", "Popescu", "a@b.co", "parola123"));
-
-        result.IsValid.ShouldBeTrue();
-    }
+    private AppUser CaptureAddedUser()
+        => (AppUser)_users.ReceivedCalls()
+            .First(c => c.GetMethodInfo().Name == nameof(IAppUserRepository.Add))
+            .GetArguments()[0]!;
 }
 
 public class LoginUserTests
@@ -106,14 +115,16 @@ public class LoginUserTests
 
     private LoginUserHandler CreateSut() => new(_users, _roles, _passwords);
 
+    private static Email EmailOf(string value) => Email.Create(value).Value;
+
     [Fact]
     public async Task EmailInexistentSiParolaGresita_DauAcelasiMesaj()
     {
-        _users.GetByEmailAsync("nimeni@example.com").Returns((AppUser?)null);
+        _users.GetByEmailAsync(EmailOf("nimeni@example.com")).Returns((AppUser?)null);
         var inexistent = await CreateSut().Handle(new LoginUserQuery("nimeni@example.com", "x"), default);
 
-        var user = new AppUser { UserId = 1, Email = "cineva@example.com", PasswordHash = "h" };
-        _users.GetByEmailAsync("cineva@example.com").Returns(user);
+        var user = Loaded.User(1, "cineva@example.com", passwordHash: "h");
+        _users.GetByEmailAsync(EmailOf("cineva@example.com")).Returns(user);
         _passwords.Verify(user, "h", Arg.Any<string>()).Returns(false);
         var parolaGresita = await CreateSut().Handle(new LoginUserQuery("cineva@example.com", "x"), default);
 
@@ -124,16 +135,23 @@ public class LoginUserTests
     }
 
     [Fact]
+    public async Task EmailInvalid_DaAcelasiMesajFaraSaAtingaBaza()
+    {
+        var invalid = await CreateSut().Handle(new LoginUserQuery("nu-e-email", "x"), default);
+        var inexistent = await CreateSut().Handle(new LoginUserQuery("nimeni@example.com", "x"), default);
+
+        invalid.Error.ShouldBe(inexistent.Error);
+        await _users.Received(1).GetByEmailAsync(Arg.Any<Email>());
+    }
+
+    [Fact]
     public async Task LoginReusit_IncarcaRolulSiPermisiunile()
     {
-        var user = new AppUser { UserId = 5, Email = "admin@example.com", PasswordHash = "h", RoleId = 2 };
-        _users.GetByEmailAsync("admin@example.com").Returns(user);
+        var user = Loaded.User(5, "admin@example.com", roleId: 2, passwordHash: "h");
+        _users.GetByEmailAsync(EmailOf("admin@example.com")).Returns(user);
         _passwords.Verify(user, "h", Arg.Any<string>()).Returns(true);
-        _roles.GetByIdAsync(2).Returns(new AppRole { RoleId = 2, RoleName = "Admin" });
-        _roles.GetClaimsForRoleAsync(2).Returns(
-        [
-            new AppClaim { ClaimId = 1, ClaimName = "games.manage", IsActive = true }
-        ]);
+        _roles.GetByIdAsync(2).Returns(Loaded.Role(2, "Admin"));
+        _roles.GetClaimsForRoleAsync(2).Returns([Loaded.Claim(1, "games.manage")]);
 
         var result = await CreateSut().Handle(new LoginUserQuery("admin@example.com", "x"), default);
 
@@ -145,15 +163,8 @@ public class LoginUserTests
     [Fact]
     public async Task NuExpuneEntitateaUtilizatorului()
     {
-        var user = new AppUser
-        {
-            UserId = 5,
-            Name = "Ana",
-            FamilyName = "Popescu",
-            Email = "ana@example.com",
-            PasswordHash = "$argon2id$secret"
-        };
-        _users.GetByEmailAsync("ana@example.com").Returns(user);
+        var user = Loaded.User(5, "ana@example.com", "Ana", "Popescu", roleId: null, passwordHash: "$argon2id$secret");
+        _users.GetByEmailAsync(EmailOf("ana@example.com")).Returns(user);
         _passwords.Verify(user, user.PasswordHash, Arg.Any<string>()).Returns(true);
 
         var result = await CreateSut().Handle(new LoginUserQuery("ana@example.com", "x"), default);
@@ -167,8 +178,8 @@ public class LoginUserTests
     [Fact]
     public async Task UtilizatorFaraRol_NuAreNiciPermisiuni()
     {
-        var user = new AppUser { UserId = 9, Email = "user@example.com", PasswordHash = "h", RoleId = null };
-        _users.GetByEmailAsync("user@example.com").Returns(user);
+        var user = Loaded.User(9, "user@example.com", roleId: null, passwordHash: "h");
+        _users.GetByEmailAsync(EmailOf("user@example.com")).Returns(user);
         _passwords.Verify(user, "h", Arg.Any<string>()).Returns(true);
 
         var result = await CreateSut().Handle(new LoginUserQuery("user@example.com", "x"), default);
@@ -200,19 +211,9 @@ public class GetUserSecurityContextTests
     [Fact]
     public async Task ContActiv_IntoarcePermisiunileCurente()
     {
-        _users.GetByIdAsync(7).Returns(new AppUser
-        {
-            UserId = 7,
-            Name = "Ana",
-            FamilyName = "Popescu",
-            Email = "ana@example.com",
-            RoleId = 2
-        });
-        _roles.GetByIdAsync(2).Returns(new AppRole { RoleId = 2, RoleName = "Admin" });
-        _roles.GetClaimsForRoleAsync(2).Returns(
-        [
-            new AppClaim { ClaimId = 1, ClaimName = "roles.manage", IsActive = true }
-        ]);
+        _users.GetByIdAsync(7).Returns(Loaded.User(7, "ana@example.com", "Ana", "Popescu", roleId: 2));
+        _roles.GetByIdAsync(2).Returns(Loaded.Role(2, "Admin"));
+        _roles.GetClaimsForRoleAsync(2).Returns([Loaded.Claim(1, "roles.manage")]);
 
         var context = await CreateSut().Handle(new GetUserSecurityContextQuery(7), default);
 

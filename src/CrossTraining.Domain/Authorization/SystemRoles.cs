@@ -1,4 +1,4 @@
-namespace CrossTraining.Application.Authorization;
+namespace CrossTraining.Domain.Authorization;
 
 /// <summary>
 /// Rolurile de care depinde functionarea aplicatiei, create de migrarea SeedPermissions.

@@ -82,14 +82,14 @@ public class ProfileController : Controller
         if (userId == null)
             return RedirectToAction("Login", "UserAuth");
 
-        if (model.SelectedDomainIds == null || model.SelectedDomainIds.Count == 0)
+        // Regula "cel putin un domeniu" o aplica entitatea; aici doar se afiseaza refuzul.
+        var result = await _sender.Send(new SetUserDomainsCommand(userId.Value, model.SelectedDomainIds ?? []));
+        if (!result.Succeeded)
         {
-            ModelState.AddModelError("", "Selecteaza cel putin un domeniu.");
+            ModelState.AddModelError(string.Empty, result.Error!);
             model.AvailableDomains = await _sender.Send(new GetActiveDomainsQuery());
             return View(model);
         }
-
-        await _sender.Send(new SetUserDomainsCommand(userId.Value, model.SelectedDomainIds));
 
         TempData["Success"] = "Domeniile au fost actualizate.";
         return RedirectToAction("Index");

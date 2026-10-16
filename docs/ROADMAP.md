@@ -321,13 +321,64 @@ atribute inline din sectiunea CSP de mai sus nu a crescut.
   de dezvoltare are, in tabelele `_TD`, "Platform User" si "App Admin"), insertul pica pe
   cheia primara. De verificat inainte de a aduce o asemenea baza la zi.
 
-## Etapa 7 - Observabilitate
+## Etapa 7 - Observabilitate si configurare pentru productie ✅ (fara OpenTelemetry)
 
-- [ ] Serilog cu logging structurat. Momentan niciun serviciu nu injecteaza `ILogger`.
-- [ ] Middleware global de exceptii + `ProblemDetails`.
-- [ ] Health checks (`/health`, `/health/ready`) inclusiv pe baza de date.
+Vezi [ADR-0011](adr/0011-erori-logging-si-configurare-pentru-productie.md).
+
+- [x] **Serilog** cu logging structurat: text lizibil local, JSON compact in rest, un rand
+      per cerere HTTP. Refuzurile de business apar ca refuz, cu motivul, nu ca reusita.
+- [x] **Tratarea globala a erorilor**: cererile din JS primesc un `ProblemDetails` cu
+      mesaj si codul cererii; paginile ajung la `/Home/Error`, cu acelasi cod.
+- [x] **Health checks**: `/health` (procesul raspunde) si `/health/ready` (ajunge la baza
+      de date), anonime.
+- [x] **Data Protection**: nume de aplicatie fix si folder de chei configurabil
+      (`DataProtection:KeysPath`).
+- [x] **Reverse proxy**: `X-Forwarded-For` acceptat doar de la proxy-urile declarate
+      (`ReverseProxy:KnownProxies`).
+- [x] Corelare: codul cererii apare in log, pe pagina de eroare si in raspunsul JSON.
 - [ ] OpenTelemetry: trace-uri si metrici.
-- [ ] Correlation id propagat prin toate log-urile unei cereri.
+- [ ] Cheile Data Protection protejate cu certificat, pentru mai multe instante.
+
+### Reparat pe parcurs
+
+- `/Home/Privacy` dadea 500: actiunea exista, view-ul nu. Actiunea a fost scoasa.
+- Request logging-ul Serilog scrie implicit in `Log.Logger`, pe care aplicatia il lasa
+  intentionat neconfigurat (testele pornesc multe aplicatii in acelasi proces), deci
+  randurile de cerere se pierdeau. Primeste acum explicit logger-ul aplicatiei.
+
+## Etapa 8 - Domeniu bogat si mai putina ceremonie ✅
+
+Vezi [ADR-0010](adr/0010-domeniu-bogat-si-o-singura-sursa-pentru-invarianti.md).
+
+- [x] **Regulile de business in entitati.** Setteri si constructori privati; starea se
+      schimba prin metode care isi verifica regulile si intorc `DomainResult`.
+- [x] **`Email` value object**, validat si normalizat o singura data; coloana ramane
+      `nvarchar(256)` prin value converter.
+- [x] **Rolul ca radacina a legaturilor rol-drept**: `Grant`/`Revoke` trec prin `AppRole`.
+- [x] **Linkurile de joc doar `http`/`https`** - inainte, `javascript:...` ajungea intr-un `href`.
+- [x] **FluentValidation scos**, impreuna cu validatoarele si `ValidationBehavior`, care
+      dublau regulile din formulare si din entitati. Un caz de utilizare are acum doua
+      clase, nu trei, iar o cerere care ocoleste formularul primeste mesaj, nu eroare 500.
+- [x] **Existenta datelor verificata in handlere** (domeniul unui joc, domeniile alese de
+      utilizator) - un id gresit nu mai ajunge la cheia straina.
+- [x] Regula de arhitectura noua: `Entitatile_NuAuSetteriPublici`.
+
+### Verificat, nu presupus
+
+- Teste unitare noi direct pe entitati (`tests/CrossTraining.UnitTests/Domain`), fara
+  mock-uri si fara baza de date.
+- Pe SQL Server real: comparatia pe `Email` se traduce in SQL si nu tine cont de litere.
+- Validate prin mutatie: protectia drepturilor de sistem scoasa din `AppClaim`, regula de
+  link scoasa din `Game`, raspunsul JSON la erori AJAX dezactivat, verificarea bazei scoasa
+  din `/health/ready`, un setter public pe o entitate - fiecare face cel putin un test sa pice.
+- Pornire pe baza locala reala: `/health/ready` raspunde 200, login-ul ajunge la baza.
+
+### Schimbari de comportament
+
+- **Un joc cu link care nu e adresa http/https** se citeste normal, dar nu se mai poate
+  salva pana nu primeste un link valid (in baza locala: "jjj", "ff", "ffffff").
+- **Cookie-urile vechi devin invalide o data**, din cauza numelui de aplicatie fixat in
+  Data Protection: utilizatorii se logheaza din nou.
 
 ---
 
@@ -336,8 +387,7 @@ atribute inline din sectiunea CSP de mai sus nu a crescut.
 - [ ] **Cod bilingv.** Comentariile sunt in romana, mesajele catre utilizator sunt
       amestecate ("Invalid email or password!" langa "Parola veche este incorecta!").
       De ales o limba pentru cod si de trecut mesajele de UI prin `IStringLocalizer`.
-- [ ] **Domeniu anemic.** Entitatile sunt saci de proprietati cu setteri publici:
-      zero invarianti, zero value objects (`Email` si `PasswordHash` sunt `string`),
-      zero metode de fabrica.
+- [x] ~~**Domeniu anemic.**~~ Rezolvat in etapa 8.
 - [ ] **Front-end**: sapte fisiere JS separate, fara bundling, fara minificare, fara
       `asp-append-version` pentru cache busting.
+- [ ] **Trecerea la .NET 10**: .NET 8 iese din suport pe 10 noiembrie 2026.

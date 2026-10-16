@@ -1,4 +1,3 @@
-using CrossTraining.Domain.Entities;
 using CrossTraining.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,15 +23,15 @@ public class NameUniquenessTests
     {
         Skip.IfNot(_sql.IsAvailable, _sql.SkipReason);
 
-        var name = Unique("drept");
+        var name = TestData.Unique("drept");
         await using (var db = _sql.CreateDbContext())
         {
-            db.Claims.Add(new AppClaim { ClaimName = name, IsActive = false });
+            db.Claims.Add(TestData.Claim(name, isActive: false));
             await db.SaveChangesAsync();
         }
 
         await using var second = _sql.CreateDbContext();
-        second.Claims.Add(new AppClaim { ClaimName = name.ToUpperInvariant(), IsActive = true });
+        second.Claims.Add(TestData.Claim(name.ToUpperInvariant()));
 
         // Indexul vede si randul dezactivat: altfel reactivarea lui ar produce un duplicat.
         await Should.ThrowAsync<DbUpdateException>(() => second.SaveChangesAsync());
@@ -43,15 +42,15 @@ public class NameUniquenessTests
     {
         Skip.IfNot(_sql.IsAvailable, _sql.SkipReason);
 
-        var name = Unique("rol");
+        var name = TestData.Unique("rol");
         await using (var db = _sql.CreateDbContext())
         {
-            db.Roles.Add(new AppRole { RoleName = name, IsActive = true });
+            db.Roles.Add(TestData.Role(name));
             await db.SaveChangesAsync();
         }
 
         await using var second = _sql.CreateDbContext();
-        second.Roles.Add(new AppRole { RoleName = name.ToUpperInvariant(), IsActive = true });
+        second.Roles.Add(TestData.Role(name.ToUpperInvariant()));
 
         await Should.ThrowAsync<DbUpdateException>(() => second.SaveChangesAsync());
     }
@@ -65,8 +64,8 @@ public class NameUniquenessTests
         Skip.IfNot(_sql.IsAvailable, _sql.SkipReason);
 
         await using var db = _sql.CreateDbContext();
-        var claim = new AppClaim { ClaimName = Unique("drept"), IsActive = false };
-        var role = new AppRole { RoleName = Unique("rol"), IsActive = false };
+        var claim = TestData.Claim(TestData.Unique("drept"), isActive: false);
+        var role = TestData.Role(TestData.Unique("rol"), isActive: false);
         db.Claims.Add(claim);
         db.Roles.Add(role);
         await db.SaveChangesAsync();
@@ -87,8 +86,8 @@ public class NameUniquenessTests
 
         await using var db = _sql.CreateDbContext();
         var marker = Guid.NewGuid().ToString("N")[..8];
-        db.Roles.Add(new AppRole { RoleName = $"lista-{marker}-activ", IsActive = true });
-        db.Roles.Add(new AppRole { RoleName = $"lista-{marker}-inactiv", IsActive = false });
+        db.Roles.Add(TestData.Role($"lista-{marker}-activ"));
+        db.Roles.Add(TestData.Role($"lista-{marker}-inactiv", isActive: false));
         await db.SaveChangesAsync();
 
         var result = await new AppRoleRepository(db).SearchForAdminAsync($"lista-{marker}", 1, 10);
@@ -96,6 +95,4 @@ public class NameUniquenessTests
         result.TotalCount.ShouldBe(2);
         result.Items.ShouldContain(r => !r.IsActive);
     }
-
-    private static string Unique(string prefix) => $"{prefix}-{Guid.NewGuid():N}";
 }

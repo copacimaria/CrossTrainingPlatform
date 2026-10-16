@@ -2,7 +2,6 @@ using CrossTraining.Application.Abstractions.Messaging;
 using CrossTraining.Application.Abstractions.Persistence;
 using CrossTraining.Application.DTOs;
 using CrossTraining.Domain.Entities;
-using FluentValidation;
 
 namespace CrossTraining.Application.Features.Domains;
 
@@ -53,14 +52,9 @@ public sealed class GetDomainHandler : IQueryHandler<GetDomainQuery, DomainDto?>
 
 // ------------------- COMENZI -------------------
 
-public sealed record CreateDomainCommand(string DomainName, bool IsActive) : ICommand<int>;
+public sealed record CreateDomainCommand(string DomainName, bool IsActive) : ICommand<OperationResult>;
 
-public sealed class CreateDomainValidator : AbstractValidator<CreateDomainCommand>
-{
-    public CreateDomainValidator() => RuleFor(c => c.DomainName).NotEmpty().MaximumLength(150);
-}
-
-public sealed class CreateDomainHandler : ICommandHandler<CreateDomainCommand, int>
+public sealed class CreateDomainHandler : ICommandHandler<CreateDomainCommand, OperationResult>
 {
     private readonly IDomainRepository _domains;
     private readonly IUnitOfWork _unitOfWork;
@@ -71,32 +65,21 @@ public sealed class CreateDomainHandler : ICommandHandler<CreateDomainCommand, i
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<int> Handle(CreateDomainCommand command, CancellationToken cancellationToken)
+    public async Task<OperationResult> Handle(CreateDomainCommand command, CancellationToken cancellationToken)
     {
-        var domain = new TrainingDomain
-        {
-            DomainName = command.DomainName,
-            IsActive = command.IsActive
-        };
+        var created = TrainingDomain.Create(command.DomainName, command.IsActive);
+        if (!created.Succeeded)
+            return OperationResult.From(created);
 
-        _domains.Add(domain);
+        _domains.Add(created.Value);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return domain.DomainId;
+        return OperationResult.Success();
     }
 }
 
-public sealed record UpdateDomainCommand(int DomainId, string DomainName, bool IsActive) : ICommand<bool>;
+public sealed record UpdateDomainCommand(int DomainId, string DomainName, bool IsActive) : ICommand<OperationResult>;
 
-public sealed class UpdateDomainValidator : AbstractValidator<UpdateDomainCommand>
-{
-    public UpdateDomainValidator()
-    {
-        RuleFor(c => c.DomainId).GreaterThan(0);
-        RuleFor(c => c.DomainName).NotEmpty().MaximumLength(150);
-    }
-}
-
-public sealed class UpdateDomainHandler : ICommandHandler<UpdateDomainCommand, bool>
+public sealed class UpdateDomainHandler : ICommandHandler<UpdateDomainCommand, OperationResult>
 {
     private readonly IDomainRepository _domains;
     private readonly IUnitOfWork _unitOfWork;
@@ -107,28 +90,26 @@ public sealed class UpdateDomainHandler : ICommandHandler<UpdateDomainCommand, b
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<bool> Handle(UpdateDomainCommand command, CancellationToken cancellationToken)
+    public async Task<OperationResult> Handle(UpdateDomainCommand command, CancellationToken cancellationToken)
     {
         var domain = await _domains.GetForAdminAsync(command.DomainId);
         if (domain == null)
-            return false;
+            return DomainRules.NotFound();
 
-        domain.DomainName = command.DomainName;
-        domain.IsActive = command.IsActive;
+        var renamed = domain.Rename(command.DomainName);
+        if (!renamed.Succeeded)
+            return OperationResult.From(renamed);
+
+        domain.SetActive(command.IsActive);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return true;
+        return OperationResult.Success();
     }
 }
 
 /// <summary>Dezactiveaza domeniul. Nu se sterge fizic (vezi ADR-0007).</summary>
-public sealed record DeactivateDomainCommand(int DomainId) : ICommand<bool>;
+public sealed record DeactivateDomainCommand(int DomainId) : ICommand<OperationResult>;
 
-public sealed class DeactivateDomainValidator : AbstractValidator<DeactivateDomainCommand>
-{
-    public DeactivateDomainValidator() => RuleFor(c => c.DomainId).GreaterThan(0);
-}
-
-public sealed class DeactivateDomainHandler : ICommandHandler<DeactivateDomainCommand, bool>
+public sealed class DeactivateDomainHandler : ICommandHandler<DeactivateDomainCommand, OperationResult>
 {
     private readonly IDomainRepository _domains;
     private readonly IUnitOfWork _unitOfWork;
@@ -139,16 +120,21 @@ public sealed class DeactivateDomainHandler : ICommandHandler<DeactivateDomainCo
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<bool> Handle(DeactivateDomainCommand command, CancellationToken cancellationToken)
+    public async Task<OperationResult> Handle(DeactivateDomainCommand command, CancellationToken cancellationToken)
     {
         var domain = await _domains.GetForAdminAsync(command.DomainId);
         if (domain == null)
-            return false;
+            return DomainRules.NotFound();
 
-        domain.IsActive = false;
+        domain.Deactivate();
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return true;
+        return OperationResult.Success();
     }
+}
+
+internal static class DomainRules
+{
+    public static OperationResult NotFound() => OperationResult.Fail("Domeniul nu exista.");
 }
 
 internal static class DomainMapping

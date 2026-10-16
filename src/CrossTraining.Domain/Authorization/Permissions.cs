@@ -1,4 +1,4 @@
-namespace CrossTraining.Application.Authorization;
+namespace CrossTraining.Domain.Authorization;
 
 /// <summary>
 /// Numele drepturilor, asa cum sunt stocate in <c>dbo.AppClaim</c>.
@@ -8,9 +8,9 @@ namespace CrossTraining.Application.Authorization;
 /// Orice adaugare aici trebuie insotita de un rand in baza de date - vezi migrarea
 /// SeedPermissions.
 ///
-/// Stau in Application, nu in Web: pe langa atributele de autorizare din controllere, le
-/// folosesc si cazurile de utilizare, ca sa refuze redenumirea sau dezactivarea unui drept
-/// de care depinde codul.
+/// Stau in Domain: entitatea <c>AppClaim</c> le foloseste ca sa refuze redenumirea sau
+/// dezactivarea unui drept de care depinde codul, iar atributele de autorizare din
+/// controllere le folosesc ca sa ceara dreptul.
 /// </summary>
 public static class Permissions
 {

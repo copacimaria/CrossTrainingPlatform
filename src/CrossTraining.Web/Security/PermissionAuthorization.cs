@@ -57,7 +57,7 @@ public sealed class HasPermissionAttribute : AuthorizeAttribute
 ///
 /// Alternativa ar fi inregistrarea manuala a cate unei politici pentru fiecare drept in
 /// Program.cs - o lista care s-ar desincroniza de
-/// <see cref="CrossTraining.Application.Authorization.Permissions"/> la prima
+/// <see cref="CrossTraining.Domain.Authorization.Permissions"/> la prima
 /// adaugare uitata.
 /// </summary>
 public sealed class PermissionPolicyProvider : DefaultAuthorizationPolicyProvider

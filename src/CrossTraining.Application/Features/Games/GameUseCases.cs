@@ -2,7 +2,6 @@ using CrossTraining.Application.Abstractions.Messaging;
 using CrossTraining.Application.Abstractions.Persistence;
 using CrossTraining.Application.DTOs;
 using CrossTraining.Domain.Entities;
-using FluentValidation;
 
 namespace CrossTraining.Application.Features.Games;
 
@@ -10,11 +9,6 @@ namespace CrossTraining.Application.Features.Games;
 
 /// <summary>Jocurile vizibile unui utilizator: toate cele active, plus cele din domeniile lui.</summary>
 public sealed record GetGamesForUserQuery(int UserId) : IQuery<GamesForUserDto>;
-
-public sealed class GetGamesForUserValidator : AbstractValidator<GetGamesForUserQuery>
-{
-    public GetGamesForUserValidator() => RuleFor(q => q.UserId).GreaterThan(0);
-}
 
 public sealed class GetGamesForUserHandler : IQueryHandler<GetGamesForUserQuery, GamesForUserDto>
 {
@@ -64,46 +58,46 @@ public sealed record CreateGameCommand(
     string GameName,
     string? Description,
     string? DownloadLink,
-    int? DomainId) : ICommand<int>;
+    int? DomainId) : ICommand<OperationResult>;
 
-public sealed class CreateGameValidator : AbstractValidator<CreateGameCommand>
-{
-    public CreateGameValidator()
-    {
-        RuleFor(c => c.GameName).NotEmpty().MaximumLength(100);
-        RuleFor(c => c.Description).MaximumLength(500);
-        RuleFor(c => c.DownloadLink).MaximumLength(500);
-    }
-}
-
-public sealed class CreateGameHandler : ICommandHandler<CreateGameCommand, int>
+public sealed class CreateGameHandler : ICommandHandler<CreateGameCommand, OperationResult>
 {
     private readonly IGameRepository _games;
+    private readonly IDomainRepository _domains;
     private readonly IUnitOfWork _unitOfWork;
     private readonly TimeProvider _clock;
 
-    public CreateGameHandler(IGameRepository games, IUnitOfWork unitOfWork, TimeProvider clock)
+    public CreateGameHandler(
+        IGameRepository games,
+        IDomainRepository domains,
+        IUnitOfWork unitOfWork,
+        TimeProvider clock)
     {
         _games = games;
+        _domains = domains;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
 
-    public async Task<int> Handle(CreateGameCommand command, CancellationToken cancellationToken)
+    public async Task<OperationResult> Handle(CreateGameCommand command, CancellationToken cancellationToken)
     {
-        var game = new Game
-        {
-            GameName = command.GameName,
-            Description = command.Description,
-            DownloadLink = command.DownloadLink,
-            DomainId = command.DomainId,
-            IsActive = true,
-            CreatedAt = _clock.GetUtcNow().UtcDateTime
-        };
+        var missingDomain = await GameRules.CheckDomainExistsAsync(_domains, command.DomainId);
+        if (missingDomain != null)
+            return missingDomain;
 
-        _games.Add(game);
+        var created = Game.Create(
+            command.GameName,
+            command.Description,
+            command.DownloadLink,
+            command.DomainId,
+            _clock.GetUtcNow().UtcDateTime);
+
+        if (!created.Succeeded)
+            return OperationResult.From(created);
+
+        _games.Add(created.Value);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return game.GameId;
+        return OperationResult.Success();
     }
 }
 
@@ -112,55 +106,44 @@ public sealed record UpdateGameCommand(
     string GameName,
     string? Description,
     string? DownloadLink,
-    int? DomainId) : ICommand<bool>;
+    int? DomainId) : ICommand<OperationResult>;
 
-public sealed class UpdateGameValidator : AbstractValidator<UpdateGameCommand>
-{
-    public UpdateGameValidator()
-    {
-        RuleFor(c => c.GameId).GreaterThan(0);
-        RuleFor(c => c.GameName).NotEmpty().MaximumLength(100);
-        RuleFor(c => c.Description).MaximumLength(500);
-        RuleFor(c => c.DownloadLink).MaximumLength(500);
-    }
-}
-
-public sealed class UpdateGameHandler : ICommandHandler<UpdateGameCommand, bool>
+public sealed class UpdateGameHandler : ICommandHandler<UpdateGameCommand, OperationResult>
 {
     private readonly IGameRepository _games;
+    private readonly IDomainRepository _domains;
     private readonly IUnitOfWork _unitOfWork;
 
-    public UpdateGameHandler(IGameRepository games, IUnitOfWork unitOfWork)
+    public UpdateGameHandler(IGameRepository games, IDomainRepository domains, IUnitOfWork unitOfWork)
     {
         _games = games;
+        _domains = domains;
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<bool> Handle(UpdateGameCommand command, CancellationToken cancellationToken)
+    public async Task<OperationResult> Handle(UpdateGameCommand command, CancellationToken cancellationToken)
     {
         var game = await _games.GetForAdminAsync(command.GameId);
         if (game == null)
-            return false;
+            return GameRules.NotFound();
 
-        game.GameName = command.GameName;
-        game.Description = command.Description;
-        game.DownloadLink = command.DownloadLink;
-        game.DomainId = command.DomainId;
+        var missingDomain = await GameRules.CheckDomainExistsAsync(_domains, command.DomainId);
+        if (missingDomain != null)
+            return missingDomain;
+
+        var updated = game.Update(command.GameName, command.Description, command.DownloadLink, command.DomainId);
+        if (!updated.Succeeded)
+            return OperationResult.From(updated);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return true;
+        return OperationResult.Success();
     }
 }
 
 /// <summary>Dezactiveaza jocul. Nu se sterge fizic (vezi ADR-0007).</summary>
-public sealed record DeactivateGameCommand(int GameId) : ICommand<bool>;
+public sealed record DeactivateGameCommand(int GameId) : ICommand<OperationResult>;
 
-public sealed class DeactivateGameValidator : AbstractValidator<DeactivateGameCommand>
-{
-    public DeactivateGameValidator() => RuleFor(c => c.GameId).GreaterThan(0);
-}
-
-public sealed class DeactivateGameHandler : ICommandHandler<DeactivateGameCommand, bool>
+public sealed class DeactivateGameHandler : ICommandHandler<DeactivateGameCommand, OperationResult>
 {
     private readonly IGameRepository _games;
     private readonly IUnitOfWork _unitOfWork;
@@ -171,15 +154,34 @@ public sealed class DeactivateGameHandler : ICommandHandler<DeactivateGameComman
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<bool> Handle(DeactivateGameCommand command, CancellationToken cancellationToken)
+    public async Task<OperationResult> Handle(DeactivateGameCommand command, CancellationToken cancellationToken)
     {
         var game = await _games.GetForAdminAsync(command.GameId);
         if (game == null)
-            return false;
+            return GameRules.NotFound();
 
-        game.IsActive = false;
+        game.Deactivate();
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return true;
+        return OperationResult.Success();
+    }
+}
+
+internal static class GameRules
+{
+    public static OperationResult NotFound() => OperationResult.Fail("Jocul nu exista.");
+
+    /// <summary>
+    /// Refuzul, daca domeniul ales nu exista; altfel null. Verificat aici, nu lasat pe seama
+    /// cheii straine, ca un id gresit sa ajunga la utilizator ca mesaj, nu ca eroare 500.
+    /// </summary>
+    public static async Task<OperationResult?> CheckDomainExistsAsync(IDomainRepository domains, int? domainId)
+    {
+        if (domainId == null)
+            return null;
+
+        return await domains.GetForAdminAsync(domainId.Value) == null
+            ? OperationResult.Fail("Domeniul ales nu exista.")
+            : null;
     }
 }
 

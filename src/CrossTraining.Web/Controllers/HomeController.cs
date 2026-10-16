@@ -10,26 +10,14 @@ namespace CrossTraining.Web.Controllers;
 [AllowAnonymous]
 public class HomeController : Controller
 {
-    private readonly ILogger<HomeController> _logger;
-
-    public HomeController(ILogger<HomeController> logger)
-    {
-        _logger = logger;
-    }
-
     public IActionResult Index() => View();
 
-    public IActionResult Privacy() => View();
-
+    /// <summary>
+    /// Pagina pentru erorile neasteptate din cererile de pagina. Exceptia a fost deja
+    /// logata de middleware-ul de exceptii; aici doar se afiseaza codul cererii, ca
+    /// utilizatorul sa-l poata da la suport si eroarea sa fie gasita in log.
+    /// </summary>
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
-    {
-        var requestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
-
-        // TODO(etapa 7): inlocuit cu middleware global de exceptii + ProblemDetails.
-        var feature = HttpContext.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
-        _logger.LogError(feature?.Error, "Cerere esuata. RequestId: {RequestId}, Path: {Path}", requestId, feature?.Path);
-
-        return View(new ErrorViewModel { RequestId = requestId });
-    }
+        => View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
 }

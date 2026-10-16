@@ -2,18 +2,13 @@ using CrossTraining.Application.Abstractions.Messaging;
 using CrossTraining.Application.Abstractions.Persistence;
 using CrossTraining.Application.Abstractions.Security;
 using CrossTraining.Application.DTOs;
-using FluentValidation;
+using CrossTraining.Domain.Entities;
 
 namespace CrossTraining.Application.Features.Users;
 
 // ------------------- CITIRI -------------------
 
 public sealed record GetUserProfileQuery(int UserId) : IQuery<UserProfileDto?>;
-
-public sealed class GetUserProfileValidator : AbstractValidator<GetUserProfileQuery>
-{
-    public GetUserProfileValidator() => RuleFor(q => q.UserId).GreaterThan(0);
-}
 
 public sealed class GetUserProfileHandler : IQueryHandler<GetUserProfileQuery, UserProfileDto?>
 {
@@ -48,8 +43,8 @@ public sealed class GetUserProfileHandler : IQueryHandler<GetUserProfileQuery, U
         var domains = await _domains.GetByIdsAsync(domainIds);
 
         return new UserProfileDto(
-            $"{user.Name} {user.FamilyName}",
-            user.Email,
+            user.FullName,
+            user.Email.Value,
             roleName,
             string.Join(", ", domains.Select(d => d.DomainName)));
     }
@@ -72,16 +67,6 @@ public sealed class GetUserDomainIdsHandler : IQueryHandler<GetUserDomainIdsQuer
 public sealed record ChangePasswordCommand(int UserId, string OldPassword, string NewPassword)
     : ICommand<OperationResult>;
 
-public sealed class ChangePasswordValidator : AbstractValidator<ChangePasswordCommand>
-{
-    public ChangePasswordValidator()
-    {
-        RuleFor(c => c.UserId).GreaterThan(0);
-        RuleFor(c => c.OldPassword).NotEmpty();
-        RuleFor(c => c.NewPassword).NotEmpty().MinimumLength(6);
-    }
-}
-
 public sealed class ChangePasswordHandler : ICommandHandler<ChangePasswordCommand, OperationResult>
 {
     private readonly IAppUserRepository _users;
@@ -102,53 +87,61 @@ public sealed class ChangePasswordHandler : ICommandHandler<ChangePasswordComman
     {
         var user = await _users.GetByIdAsync(command.UserId);
         if (user == null)
-            return OperationResult.Fail("User not found");
+            return OperationResult.Fail("Utilizatorul nu exista.");
 
-        // Regulile de mai jos cer acces la date sau compara doua campuri intre ele, deci
-        // se intorc ca rezultat de business, nu ca eroare de validare.
+        // Verificarea parolei vechi cere hash-ul calculat de infrastructura, deci sta aici.
         if (!_passwords.Verify(user, user.PasswordHash, command.OldPassword))
             return OperationResult.Fail("Parola veche este incorecta!", nameof(command.OldPassword));
+
+        var policy = AppUser.ValidatePassword(command.NewPassword);
+        if (!policy.Succeeded)
+            return OperationResult.Fail(policy.Error!, nameof(command.NewPassword));
 
         if (command.NewPassword == command.OldPassword)
             return OperationResult.Fail("Parola noua nu poate fi identica cu cea veche!", nameof(command.NewPassword));
 
-        // Entitatea este urmarita de context, deci e suficient sa ii schimbam campul.
-        user.PasswordHash = _passwords.Hash(user, command.NewPassword);
+        user.SetPasswordHash(_passwords.Hash(user, command.NewPassword));
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return OperationResult.Success();
     }
 }
 
-public sealed record SetUserDomainsCommand(int UserId, IReadOnlyList<int> DomainIds) : ICommand<bool>;
+public sealed record SetUserDomainsCommand(int UserId, IReadOnlyList<int> DomainIds) : ICommand<OperationResult>;
 
-public sealed class SetUserDomainsValidator : AbstractValidator<SetUserDomainsCommand>
-{
-    public SetUserDomainsValidator()
-    {
-        RuleFor(c => c.UserId).GreaterThan(0);
-        RuleFor(c => c.DomainIds).NotEmpty().WithMessage("Selecteaza cel putin un domeniu.");
-        RuleForEach(c => c.DomainIds).GreaterThan(0);
-    }
-}
-
-public sealed class SetUserDomainsHandler : ICommandHandler<SetUserDomainsCommand, bool>
+public sealed class SetUserDomainsHandler : ICommandHandler<SetUserDomainsCommand, OperationResult>
 {
     private readonly IAppUserRepository _users;
+    private readonly IDomainRepository _domains;
     private readonly IUnitOfWork _unitOfWork;
 
-    public SetUserDomainsHandler(IAppUserRepository users, IUnitOfWork unitOfWork)
+    public SetUserDomainsHandler(IAppUserRepository users, IDomainRepository domains, IUnitOfWork unitOfWork)
     {
         _users = users;
+        _domains = domains;
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<bool> Handle(SetUserDomainsCommand command, CancellationToken cancellationToken)
+    public async Task<OperationResult> Handle(SetUserDomainsCommand command, CancellationToken cancellationToken)
     {
-        // Stergerea legaturilor vechi si adaugarea celor noi ajung in aceeasi tranzactie:
-        // utilizatorul nu poate ramane fara niciun domeniu la jumatatea operatiei.
-        await _users.ReplaceUserDomainsAsync(command.UserId, command.DomainIds);
+        var user = await _users.GetWithDomainLinksAsync(command.UserId);
+        if (user == null)
+            return OperationResult.Fail("Utilizatorul nu exista.");
+
+        // Doar domenii active si existente: un id gresit, trimis direct, nu trebuie sa ajunga
+        // la cheia straina si sa iasa ca eroare 500.
+        var requested = command.DomainIds.Distinct().ToList();
+        var active = await _domains.GetByIdsAsync(requested);
+        if (active.Count != requested.Count)
+            return OperationResult.Fail("Unul dintre domeniile alese nu exista sau este dezactivat.");
+
+        var chosen = user.ChooseDomains(requested);
+        if (!chosen.Succeeded)
+            return OperationResult.From(chosen);
+
+        // Legaturile vechi si cele noi ajung in aceeasi salvare: utilizatorul nu poate ramane
+        // fara niciun domeniu la jumatatea operatiei.
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return true;
+        return OperationResult.Success();
     }
 }

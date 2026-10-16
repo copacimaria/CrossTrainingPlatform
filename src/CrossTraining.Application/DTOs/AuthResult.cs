@@ -1,10 +1,12 @@
 namespace CrossTraining.Application.DTOs;
 
 /// <summary>Rezultatul unei operatii de autentificare / inregistrare.</summary>
-public sealed class AuthResult
+public sealed class AuthResult : IUseCaseOutcome
 {
     public bool Succeeded { get; init; }
     public string? Error { get; init; }
+
+    string? IUseCaseOutcome.RefusalReason => Error;
 
     /// <summary>Utilizatorul autentificat. Null la inregistrare si la eroare.</summary>
     public AuthenticatedUserDto? User { get; init; }

@@ -1,5 +1,5 @@
-using CrossTraining.Application.Authorization;
 using CrossTraining.Application.Features.Claims;
+using CrossTraining.Domain.Authorization;
 using CrossTraining.Web.Extensions;
 using CrossTraining.Web.Models;
 using CrossTraining.Web.Security;

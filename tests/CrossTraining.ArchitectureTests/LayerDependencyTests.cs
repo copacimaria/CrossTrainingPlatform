@@ -212,7 +212,7 @@ public class LayerDependencyTests
     public void Controllerele_NuAtingDirectPorturileDePersistenta()
     {
         // Controllerele trimit comenzi si interogari. Daca ar injecta un repository, ar
-        // ocoli pipeline-ul - deci si validarea, si tranzactia, si logarea.
+        // ocoli pipeline-ul - deci si tranzactia, si logarea.
         var result = Types.InAssembly(Web)
             .That().HaveNameEndingWith("Controller")
             .ShouldNot()
@@ -220,6 +220,26 @@ public class LayerDependencyTests
             .GetResult();
 
         AssertSuccess(result, "Accesul la date din controllere trece prin ISender.");
+    }
+
+    [Fact]
+    public void Entitatile_NuAuSetteriPublici()
+    {
+        // ADR-0010: regulile de business stau in entitati. Un setter public le-ar ocoli -
+        // oricine ar putea scrie claim.IsActive = false peste un drept de sistem, fara ca
+        // regula din Deactivate() sa mai conteze. Starea se schimba doar prin metode.
+        var offenders = Types.InAssembly(DomainAssembly)
+            .That().ResideInNamespace("CrossTraining.Domain.Entities")
+            .And().AreClasses()
+            .GetTypes()
+            .SelectMany(type => type
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(p => p.SetMethod?.IsPublic == true)
+                .Select(p => $"{type.Name}.{p.Name}"))
+            .ToList();
+
+        offenders.ShouldBeEmpty(
+            $"Entitatile isi schimba starea prin metode, nu prin setteri publici: {string.Join(", ", offenders)}");
     }
 
     private static void AssertSuccess(TestResult result, string because)

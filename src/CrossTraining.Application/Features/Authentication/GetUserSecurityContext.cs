@@ -48,8 +48,8 @@ public sealed class GetUserSecurityContextHandler
 
         return new UserSecurityContextDto(
             user.UserId,
-            $"{user.Name} {user.FamilyName}",
-            user.Email,
+            user.FullName,
+            user.Email.Value,
             roleName,
             permissions);
     }

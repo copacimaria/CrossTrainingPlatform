@@ -1,6 +1,5 @@
 using System.Reflection;
 using CrossTraining.Application.Common.Behaviors;
-using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -9,10 +8,8 @@ namespace CrossTraining.Application.DependencyInjection;
 /// <summary>
 /// Inregistreaza cazurile de utilizare din stratul Application.
 ///
-/// Nu mai exista servicii de inregistrat unul cate unul: handlerele si validatoarele
-/// sunt descoperite prin scanarea assembly-ului. Adaugarea unui caz de utilizare nou nu
-/// mai cere o linie aici - exact ce lipsea la stratul de servicii, unde fiecare
-/// interfata trebuia mapata manual.
+/// Nu exista servicii de inregistrat unul cate unul: handlerele sunt descoperite prin
+/// scanarea assembly-ului. Adaugarea unui caz de utilizare nou nu cere o linie aici.
 /// </summary>
 public static class ApplicationServiceCollectionExtensions
 {
@@ -28,16 +25,12 @@ public static class ApplicationServiceCollectionExtensions
         {
             configuration.RegisterServicesFromAssembly(assembly);
 
-            // Ordinea conteaza si este intentionata:
-            //   1. logarea vede tot, inclusiv esecurile de validare;
-            //   2. validarea respinge cererea inainte sa se deschida vreo tranzactie;
-            //   3. tranzactia se deschide doar pentru comenzi valide.
+            // Ordinea conteaza: logarea vede tot, inclusiv refuzurile si exceptiile din
+            // tranzactie. Nu mai exista un pas separat de validare: invariantii stau in
+            // entitati, iar formularele din Web valideaza ce vede utilizatorul (ADR-0010).
             configuration.AddOpenBehavior(typeof(LoggingBehavior<,>));
-            configuration.AddOpenBehavior(typeof(ValidationBehavior<,>));
             configuration.AddOpenBehavior(typeof(UnitOfWorkBehavior<,>));
         });
-
-        services.AddValidatorsFromAssembly(assembly, includeInternalTypes: true);
 
         return services;
     }

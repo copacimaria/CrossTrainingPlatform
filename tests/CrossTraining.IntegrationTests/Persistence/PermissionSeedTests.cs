@@ -1,4 +1,4 @@
-using CrossTraining.Application.Authorization;
+using CrossTraining.Domain.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace CrossTraining.IntegrationTests.Persistence;

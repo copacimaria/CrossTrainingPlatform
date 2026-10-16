@@ -10,6 +10,7 @@
          explicit, nu se ia transitiv prin pachetul de MVC. -->
     <PackageReference Include="X.PagedList" />
     <PackageReference Include="X.PagedList.Mvc.Core" />
+    <PackageReference Include="Serilog.AspNetCore" />
   </ItemGroup>
 
   <ItemGroup>

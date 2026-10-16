@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Net;
 using System.Text.RegularExpressions;
-using CrossTraining.Application.Authorization;
+using CrossTraining.Domain.Authorization;
 using CrossTraining.Domain.Entities;
 using CrossTraining.IntegrationTests.Persistence;
 using Microsoft.AspNetCore.Authentication;
@@ -196,40 +196,26 @@ public sealed class AdminPagesRenderTests : IDisposable
 
         var suffix = Guid.NewGuid().ToString("N")[..8];
 
-        var domain = new TrainingDomain { DomainName = $"domeniu-{suffix}", IsActive = true };
-        var role = new AppRole { RoleName = $"rol-{suffix}", IsActive = true };
-        var claim = new AppClaim { ClaimName = $"drept-{suffix}", IsActive = true };
+        var domain = TestData.Domain($"domeniu-{suffix}");
+        var role = TestData.Role($"rol-{suffix}");
+        var claim = TestData.Claim($"drept-{suffix}");
         db.Domains.Add(domain);
         db.Roles.Add(role);
         db.Claims.Add(claim);
         await db.SaveChangesAsync();
 
-        var user = new AppUser
-        {
-            Name = "Admin",
-            FamilyName = "De Test",
-            Email = $"admin-{suffix}@test.local",
-            PasswordHash = "$argon2id$fictiv",
-            IsActive = true,
-            RoleId = role.RoleId
-        };
-        var game = new Game
-        {
-            GameName = $"joc-{suffix}",
-            Description = "descriere",
-            IsActive = true,
-            DomainId = domain.DomainId
-        };
+        var user = TestData.User($"admin-{suffix}@test.local", role.RoleId);
+        var game = TestData.Game($"joc-{suffix}", domain.DomainId, "descriere");
         db.Users.Add(user);
         db.Games.Add(game);
         await db.SaveChangesAsync();
 
-        db.RoleClaims.Add(new RoleClaim { RoleId = role.RoleId, ClaimId = claim.ClaimId });
-        db.UserDomains.Add(new UserDomain { UserId = user.UserId, DomainId = domain.DomainId });
+        db.RoleClaims.Add(new RoleClaim(role.RoleId, claim.ClaimId));
+        db.UserDomains.Add(new UserDomain(user.UserId, domain.DomainId));
 
         // Cate un rand dezactivat, gasit in liste dupa acelasi sufix.
-        var inactiveRole = new AppRole { RoleName = $"rol-{suffix}-inactiv", IsActive = false };
-        var inactiveClaim = new AppClaim { ClaimName = $"drept-{suffix}-inactiv", IsActive = false };
+        var inactiveRole = TestData.Role($"rol-{suffix}-inactiv", isActive: false);
+        var inactiveClaim = TestData.Claim($"drept-{suffix}-inactiv", isActive: false);
         db.Roles.Add(inactiveRole);
         db.Claims.Add(inactiveClaim);
         await db.SaveChangesAsync();

@@ -10,7 +10,7 @@ namespace CrossTraining.UnitTests.Infrastructure;
 public class PasswordServiceTests
 {
     private readonly PasswordService _sut = new();
-    private static readonly AppUser User = new() { UserId = 1, Email = "test@example.com" };
+    private static readonly AppUser User = Loaded.User(1, "test@example.com");
 
     [Fact]
     public void Hash_NuIntoarceParolaInClar()

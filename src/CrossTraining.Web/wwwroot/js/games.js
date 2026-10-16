@@ -147,7 +147,7 @@ async function submitEditGame(gameId) {
         sessionStorage.setItem('showToastGameEdited', 'true');
         location.reload();
     } else {
-        alert(result && result.message ? result.message : 'Eroare necunoscuta');
+        alert(result && result.errors ? result.errors.join("\n") : 'Eroare necunoscuta');
     }
 }
 
@@ -185,7 +185,7 @@ async function deleteGame() {
         sessionStorage.setItem('showToastGameDeleted', 'true');
         location.reload();
     } else {
-        alert(result && result.message ? result.message : 'Eroare la stergere');
+        alert(result && result.errors ? result.errors.join("\n") : 'Eroare la stergere');
     }
 }
 

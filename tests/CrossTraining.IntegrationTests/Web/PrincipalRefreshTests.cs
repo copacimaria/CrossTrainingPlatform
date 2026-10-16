@@ -1,8 +1,9 @@
 using System.Net;
 using System.Text.RegularExpressions;
 using CrossTraining.Application.Abstractions.Security;
-using CrossTraining.Application.Authorization;
+using CrossTraining.Domain.Authorization;
 using CrossTraining.Domain.Entities;
+using CrossTraining.Domain.ValueObjects;
 using CrossTraining.IntegrationTests.Persistence;
 using CrossTraining.Web.Security;
 using Microsoft.AspNetCore.Hosting;
@@ -124,7 +125,7 @@ public sealed class PrincipalRefreshTests : IDisposable
 
         // Rol propriu, nu rolul Admin partajat: testul de revocare sterge toate
         // drepturile rolului, iar clasele din aceasta colectiune ruleaza pe aceeasi baza.
-        var role = new AppRole { RoleName = $"refresh-{Guid.NewGuid():N}"[..40], IsActive = true };
+        var role = TestData.Role($"refresh-{Guid.NewGuid():N}"[..40]);
         db.Roles.Add(role);
         await db.SaveChangesAsync();
 
@@ -133,20 +134,13 @@ public sealed class PrincipalRefreshTests : IDisposable
             .Select(c => c.ClaimId)
             .FirstAsync();
 
-        db.RoleClaims.Add(new RoleClaim { RoleId = role.RoleId, ClaimId = rolesViewClaimId });
+        db.RoleClaims.Add(new RoleClaim(role.RoleId, rolesViewClaimId));
 
-        var user = new AppUser
-        {
-            Name = "Test",
-            FamilyName = "Refresh",
-            Email = _email,
-            IsActive = true,
-            RoleId = role.RoleId
-        };
+        var user = TestData.User(_email, role.RoleId);
 
         // Hash-ul real: login-ul trece prin verificarea Argon2, nu printr-un ocol de test.
         IPasswordService passwords = _factory!.Services.GetRequiredService<IPasswordService>();
-        user.PasswordHash = passwords.Hash(user, Password);
+        user.SetPasswordHash(passwords.Hash(user, Password));
 
         db.Users.Add(user);
         await db.SaveChangesAsync();
@@ -168,8 +162,9 @@ public sealed class PrincipalRefreshTests : IDisposable
     private async Task DeactivateUserAsync()
     {
         await using var db = _sql.CreateDbContext();
-        var user = await db.Users.IgnoreQueryFilters().FirstAsync(u => u.Email == _email);
-        user.IsActive = false;
+        var email = Email.Create(_email).Value;
+        var user = await db.Users.IgnoreQueryFilters().FirstAsync(u => u.Email == email);
+        user.Deactivate();
         await db.SaveChangesAsync();
     }
 

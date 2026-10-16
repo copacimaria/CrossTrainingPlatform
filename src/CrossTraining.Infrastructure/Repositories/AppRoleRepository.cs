@@ -41,6 +41,14 @@ public class AppRoleRepository : IAppRoleRepository
     public Task<AppRole?> GetForAdminAsync(int id)
         => _db.Roles.IgnoreQueryFilters().FirstOrDefaultAsync(r => r.RoleId == id);
 
+    // IgnoreQueryFilters: legaturile catre drepturi dezactivate se incarca si ele, altfel
+    // o legatura veche nu ar mai putea fi stearsa, iar una existenta ar parea lipsa.
+    public Task<AppRole?> GetWithClaimLinksAsync(int id)
+        => _db.Roles
+              .IgnoreQueryFilters()
+              .Include(r => r.RoleClaims)
+              .FirstOrDefaultAsync(r => r.RoleId == id);
+
     // Comparatia se face in SQL, dupa colatia bazei, ca indexul unic UX_AppRole_RoleName.
     public Task<AppRole?> GetByNameForAdminAsync(string roleName)
         => _db.Roles
@@ -57,14 +65,4 @@ public class AppRoleRepository : IAppRoleRepository
                     .Where(c => c.RoleClaims.Any(rc => rc.RoleId == roleId))
                     .OrderBy(c => c.ClaimName)
                     .ToListAsync();
-
-    // IgnoreQueryFilters: administrarea legaturilor trebuie sa functioneze si cand rolul
-    // sau dreptul este dezactivat, altfel o legatura veche nu ar mai putea fi stearsa.
-    public Task<RoleClaim?> GetRoleClaimAsync(int roleId, int claimId)
-        => _db.RoleClaims.IgnoreQueryFilters()
-                         .FirstOrDefaultAsync(rc => rc.RoleId == roleId && rc.ClaimId == claimId);
-
-    public void AddClaim(RoleClaim link) => _db.RoleClaims.Add(link);
-
-    public void RemoveClaim(RoleClaim link) => _db.RoleClaims.Remove(link);
 }

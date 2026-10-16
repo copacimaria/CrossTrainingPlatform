@@ -17,7 +17,7 @@ public class ChangePasswordTests
     [Fact]
     public async Task CuParolaVecheGresita_Esueaza()
     {
-        var user = new AppUser { UserId = 1, PasswordHash = "hash-curent" };
+        var user = Loaded.User(1, passwordHash: "hash-curent");
         _users.GetByIdAsync(1).Returns(user);
         _passwords.Verify(user, "hash-curent", "gresita").Returns(false);
 
@@ -32,7 +32,7 @@ public class ChangePasswordTests
     [Fact]
     public async Task CuParolaNouaIdenticaCuCeaVeche_Esueaza()
     {
-        var user = new AppUser { UserId = 1, PasswordHash = "hash-curent" };
+        var user = Loaded.User(1, passwordHash: "hash-curent");
         _users.GetByIdAsync(1).Returns(user);
         _passwords.Verify(user, "hash-curent", "aceeasi").Returns(true);
 
@@ -44,14 +44,30 @@ public class ChangePasswordTests
     }
 
     [Fact]
+    public async Task CuParolaNouaPreaScurta_Esueaza()
+    {
+        // Regula de lungime este a domeniului (AppUser.ValidatePassword), deci se aplica si
+        // unei cereri care ocoleste formularul.
+        var user = Loaded.User(1, passwordHash: "hash-curent");
+        _users.GetByIdAsync(1).Returns(user);
+        _passwords.Verify(user, "hash-curent", "veche-buna").Returns(true);
+
+        var result = await CreateSut().Handle(new ChangePasswordCommand(1, "veche-buna", "abc"), default);
+
+        result.Succeeded.ShouldBeFalse();
+        result.ErrorField.ShouldBe("NewPassword");
+        user.PasswordHash.ShouldBe("hash-curent");
+    }
+
+    [Fact]
     public async Task PeCaleaFericita_SalveazaHashulNou()
     {
-        var user = new AppUser { UserId = 1, PasswordHash = "hash-vechi" };
+        var user = Loaded.User(1, passwordHash: "hash-vechi");
         _users.GetByIdAsync(1).Returns(user);
         _passwords.Verify(user, "hash-vechi", "veche").Returns(true);
-        _passwords.Hash(user, "noua").Returns("hash-nou");
+        _passwords.Hash(user, "parola-noua").Returns("hash-nou");
 
-        var result = await CreateSut().Handle(new ChangePasswordCommand(1, "veche", "noua"), default);
+        var result = await CreateSut().Handle(new ChangePasswordCommand(1, "veche", "parola-noua"), default);
 
         result.Succeeded.ShouldBeTrue();
         user.PasswordHash.ShouldBe("hash-nou");
@@ -72,27 +88,52 @@ public class ChangePasswordTests
 public class SetUserDomainsTests
 {
     private readonly IAppUserRepository _users = Substitute.For<IAppUserRepository>();
+    private readonly IDomainRepository _domains = Substitute.For<IDomainRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+
+    private SetUserDomainsHandler CreateSut() => new(_users, _domains, _unitOfWork);
 
     [Fact]
     public async Task InlocuiesteLegaturileSiSalveazaOSinguraData()
     {
-        var handler = new SetUserDomainsHandler(_users, _unitOfWork);
+        var user = Loaded.User(1);
+        _users.GetWithDomainLinksAsync(1).Returns(user);
+        _domains.GetByIdsAsync(Arg.Any<IEnumerable<int>>())
+                .Returns([Loaded.Domain(10, "Matematica"), Loaded.Domain(20, "Chimie")]);
 
-        await handler.Handle(new SetUserDomainsCommand(1, [10, 20]), default);
+        var result = await CreateSut().Handle(new SetUserDomainsCommand(1, [10, 20]), default);
 
-        await _users.Received(1).ReplaceUserDomainsAsync(1, Arg.Any<IEnumerable<int>>());
+        result.Succeeded.ShouldBeTrue();
+        user.UserDomains.Select(ud => ud.DomainId).ShouldBe([10, 20], ignoreOrder: true);
         await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public void FaraNiciunDomeniu_EsteRespinsDeValidator()
+    public async Task FaraNiciunDomeniu_EsteRefuzat()
     {
-        // Regula "cel putin un domeniu" apartine cazului de utilizare, nu ecranului:
-        // trebuie sa fie respectata indiferent de unde vine cererea.
-        var result = new SetUserDomainsValidator().Validate(new SetUserDomainsCommand(1, []));
+        // Regula "cel putin un domeniu" apartine entitatii, nu ecranului: trebuie sa fie
+        // respectata indiferent de unde vine cererea.
+        _users.GetWithDomainLinksAsync(1).Returns(Loaded.User(1));
+        _domains.GetByIdsAsync(Arg.Any<IEnumerable<int>>()).Returns([]);
 
-        result.IsValid.ShouldBeFalse();
+        var result = await CreateSut().Handle(new SetUserDomainsCommand(1, []), default);
+
+        result.Succeeded.ShouldBeFalse();
+        await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DomeniuInexistentSauDezactivat_EsteRefuzatInLocDeEroareDeCheieStraina()
+    {
+        var user = Loaded.User(1);
+        _users.GetWithDomainLinksAsync(1).Returns(user);
+        _domains.GetByIdsAsync(Arg.Any<IEnumerable<int>>()).Returns([Loaded.Domain(10, "Matematica")]);
+
+        var result = await CreateSut().Handle(new SetUserDomainsCommand(1, [10, 999]), default);
+
+        result.Succeeded.ShouldBeFalse();
+        user.UserDomains.ShouldBeEmpty();
+        await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
 
@@ -107,26 +148,17 @@ public class GetUserProfileTests
     [Fact]
     public async Task CompuneNumeleRoluluiSiDomeniile()
     {
-        _users.GetByIdAsync(1).Returns(new AppUser
-        {
-            UserId = 1,
-            Name = "Ana",
-            FamilyName = "Popescu",
-            Email = "ana@example.com",
-            RoleId = 3
-        });
-        _roles.GetByIdAsync(3).Returns(new AppRole { RoleId = 3, RoleName = "User" });
+        _users.GetByIdAsync(1).Returns(Loaded.User(1, "ana@example.com", "Ana", "Popescu", roleId: 3));
+        _roles.GetByIdAsync(3).Returns(Loaded.Role(3, "User"));
         _users.GetDomainIdsAsync(1).Returns([10, 20]);
-        _domains.GetByIdsAsync(Arg.Any<IEnumerable<int>>()).Returns(
-        [
-            new TrainingDomain { DomainId = 10, DomainName = "Matematica" },
-            new TrainingDomain { DomainId = 20, DomainName = "Limbi straine" }
-        ]);
+        _domains.GetByIdsAsync(Arg.Any<IEnumerable<int>>())
+                .Returns([Loaded.Domain(10, "Matematica"), Loaded.Domain(20, "Limbi straine")]);
 
         var profile = await CreateSut().Handle(new GetUserProfileQuery(1), default);
 
         profile.ShouldNotBeNull();
         profile.FullName.ShouldBe("Ana Popescu");
+        profile.Email.ShouldBe("ana@example.com");
         profile.Role.ShouldBe("User");
         profile.Domains.ShouldBe("Matematica, Limbi straine");
     }

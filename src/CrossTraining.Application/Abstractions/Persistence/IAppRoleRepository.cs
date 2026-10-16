@@ -17,6 +17,13 @@ public interface IAppRoleRepository
     Task<AppRole?> GetForAdminAsync(int id);
 
     /// <summary>
+    /// Rolul (activ sau nu), impreuna cu toate legaturile lui catre drepturi - inclusiv cele
+    /// catre drepturi dezactivate. Necesar pentru <see cref="AppRole.Grant"/> si
+    /// <see cref="AppRole.Revoke"/>, care lucreaza pe colectia de legaturi.
+    /// </summary>
+    Task<AppRole?> GetWithClaimLinksAsync(int id);
+
+    /// <summary>
     /// Rolul cu acest nume, activ sau nu. Comparatia o face baza de date, cu aceleasi
     /// reguli ca indexul unic (fara diferenta intre litere mari si mici).
     /// </summary>
@@ -25,7 +32,4 @@ public interface IAppRoleRepository
     void Add(AppRole role);
 
     Task<List<AppClaim>> GetClaimsForRoleAsync(int roleId);
-    Task<RoleClaim?> GetRoleClaimAsync(int roleId, int claimId);
-    void AddClaim(RoleClaim link);
-    void RemoveClaim(RoleClaim link);
 }

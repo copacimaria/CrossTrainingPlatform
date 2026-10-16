@@ -31,8 +31,10 @@
       Vezi ADR-0008.
     -->
     <PackageVersion Include="MediatR" Version="12.4.1" />
-    <PackageVersion Include="FluentValidation" Version="11.11.0" />
-    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
+    <!--
+      FluentValidation a fost scos (ADR-0010): invariantii stau in entitati, iar
+      validatoarele de comanda ii repetau.
+    -->
   </ItemGroup>
 
   <ItemGroup Label="Securitate">
@@ -42,6 +44,13 @@
   <ItemGroup Label="UI">
     <PackageVersion Include="X.PagedList" Version="10.5.7" />
     <PackageVersion Include="X.PagedList.Mvc.Core" Version="10.5.7" />
+  </ItemGroup>
+
+  <ItemGroup Label="Operare">
+    <!-- Serilog: Apache 2.0. Logging structurat si un rand de log per cerere HTTP. -->
+    <PackageVersion Include="Serilog.AspNetCore" Version="8.0.3" />
+    <!-- Verificarea bazei de date pentru /health/ready. Aceeasi versiune ca EF Core. -->
+    <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.11" />
   </ItemGroup>
 
 

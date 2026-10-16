@@ -8,6 +8,16 @@
         <h2>Select Domains</h2>
         <p>Poti alege unul sau mai multe domenii.</p>
 
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="form-errors">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@error.ErrorMessage</div>
+                }
+            </div>
+        }
+
         <form asp-controller="Domain" asp-action="SaveUserDomain" method="post">
             @* Token semnat, emis la register. Inlocuieste vechiul userId trimis in clar. *@
             <input type="hidden" asp-for="Token" />

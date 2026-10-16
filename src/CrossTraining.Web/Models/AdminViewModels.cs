@@ -4,8 +4,9 @@ using X.PagedList;
 
 namespace CrossTraining.Web.Models;
 
-// Lungimile reflecta schema din db/002_Recreate_Schema.sql. Cand intra migrarile EF
-// (etapa 5), sursa de adevar devine configurarea si acestea se aliniaza dupa ea.
+// Atributele de aici servesc ecranul: validare in browser si mesaje langa camp. Regulile
+// care conteaza (lungimi, nume rezervate, linkuri doar http/https) le impun entitatile din
+// Domain; o cerere care ocoleste formularul e refuzata acolo (ADR-0010).
 
 public class ClaimFormModel
 {
@@ -51,8 +52,8 @@ public class GameFormModel
     [Display(Name = "Descriere")]
     public string Description { get; set; } = string.Empty;
 
-    // Fara [Url]: baza contine deja linkuri in forme variate, iar o regula noua de
-    // validare ar bloca salvarea unor jocuri care se editau pana acum fara probleme.
+    // Linkul trebuie sa fie o adresa http/https completa: ajunge direct intr-un href,
+    // iar un "javascript:..." ar rula cod la click. Regula o impune entitatea Game.
     [StringLength(500)]
     [Display(Name = "Link de descarcare")]
     public string? DownloadLink { get; set; }

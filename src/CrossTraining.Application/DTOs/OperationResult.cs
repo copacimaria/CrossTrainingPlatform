@@ -1,3 +1,5 @@
+using CrossTraining.Domain.Common;
+
 namespace CrossTraining.Application.DTOs;
 
 /// <summary>
@@ -7,13 +9,22 @@ namespace CrossTraining.Application.DTOs;
 /// Refuzurile acestea nu sunt exceptii: sunt raspunsuri asteptate, cu un mesaj pe care
 /// ecranul il arata utilizatorului.
 /// </summary>
-public class OperationResult
+public class OperationResult : IUseCaseOutcome
 {
     public bool Succeeded { get; init; }
     public string? ErrorField { get; init; }
     public string? Error { get; init; }
 
+    string? IUseCaseOutcome.RefusalReason => Error;
+
     public static OperationResult Success() => new() { Succeeded = true };
     public static OperationResult Fail(string error, string? field = null)
         => new() { Succeeded = false, Error = error, ErrorField = field };
+
+    /// <summary>Raspunsul unei operatii pe domeniu, in forma pe care o intoarce cazul de utilizare.</summary>
+    public static OperationResult From(DomainResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        return result.Succeeded ? Success() : Fail(result.Error!);
+    }
 }

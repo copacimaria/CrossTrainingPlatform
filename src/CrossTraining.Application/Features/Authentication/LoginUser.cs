@@ -2,23 +2,17 @@ using CrossTraining.Application.Abstractions.Messaging;
 using CrossTraining.Application.Abstractions.Persistence;
 using CrossTraining.Application.Abstractions.Security;
 using CrossTraining.Application.DTOs;
-using FluentValidation;
+using CrossTraining.Domain.ValueObjects;
 
 namespace CrossTraining.Application.Features.Authentication;
 
 public sealed record LoginUserQuery(string Email, string Password) : IQuery<AuthResult>;
 
-public sealed class LoginUserValidator : AbstractValidator<LoginUserQuery>
-{
-    public LoginUserValidator()
-    {
-        RuleFor(q => q.Email).NotEmpty();
-        RuleFor(q => q.Password).NotEmpty();
-    }
-}
-
 public sealed class LoginUserHandler : IQueryHandler<LoginUserQuery, AuthResult>
 {
+    /// <summary>Acelasi mesaj pentru orice esec: altfel s-ar putea afla care adrese au cont.</summary>
+    private const string InvalidCredentials = "Invalid email or password!";
+
     private readonly IAppUserRepository _users;
     private readonly IAppRoleRepository _roles;
     private readonly IPasswordService _passwords;
@@ -32,19 +26,20 @@ public sealed class LoginUserHandler : IQueryHandler<LoginUserQuery, AuthResult>
 
     public async Task<AuthResult> Handle(LoginUserQuery query, CancellationToken cancellationToken)
     {
-        // Filtrul global de soft-delete face ca un cont dezactivat sa nu fie gasit.
-        var user = await _users.GetByEmailAsync(query.Email);
+        // Un email invalid nu poate avea cont; se raspunde la fel ca pentru unul inexistent.
+        var email = Email.Create(query.Email);
+        if (!email.Succeeded || string.IsNullOrEmpty(query.Password))
+            return AuthResult.Fail(InvalidCredentials);
 
-        // Acelasi mesaj pentru email inexistent, cont dezactivat sau parola gresita.
+        // Filtrul global de soft-delete face ca un cont dezactivat sa nu fie gasit.
+        var user = await _users.GetByEmailAsync(email.Value);
+
         if (user == null || !_passwords.Verify(user, user.PasswordHash, query.Password))
-            return AuthResult.Fail("Invalid email or password!");
+            return AuthResult.Fail(InvalidCredentials);
 
         var (roleName, permissions) = await LoadRoleAndPermissionsAsync(user.RoleId);
 
-        var authenticated = new AuthenticatedUserDto(
-            user.UserId,
-            $"{user.Name} {user.FamilyName}",
-            user.Email);
+        var authenticated = new AuthenticatedUserDto(user.UserId, user.FullName, user.Email.Value);
 
         return AuthResult.Success(authenticated, roleName, permissions);
     }

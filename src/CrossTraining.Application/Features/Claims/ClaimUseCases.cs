@@ -1,29 +1,19 @@
 using CrossTraining.Application.Abstractions.Messaging;
 using CrossTraining.Application.Abstractions.Persistence;
-using CrossTraining.Application.Authorization;
 using CrossTraining.Application.DTOs;
 using CrossTraining.Domain.Entities;
-using FluentValidation;
 
 namespace CrossTraining.Application.Features.Claims;
 
-// Cazurile de utilizare pentru drepturi. Comanda / validatorul / handlerul stau
-// impreuna: cand se schimba una, se schimba de obicei si celelalte.
+// Cazurile de utilizare pentru drepturi. Regulile despre un drept (nume valid, drepturi de
+// sistem protejate) le aplica entitatea AppClaim; aici raman doar regulile care cer acces
+// la date - unicitatea numelui - si orchestrarea: incarca, cere entitatii, salveaza.
 
 // ------------------- CITIRI -------------------
 
 /// <summary>Lista paginata de drepturi pentru administrare, inclusiv cele dezactivate.</summary>
 public sealed record SearchClaimsQuery(string? SearchTerm, int Page, int PageSize)
     : IQuery<PagedResult<ClaimDto>>;
-
-public sealed class SearchClaimsValidator : AbstractValidator<SearchClaimsQuery>
-{
-    public SearchClaimsValidator()
-    {
-        RuleFor(q => q.Page).GreaterThan(0);
-        RuleFor(q => q.PageSize).InclusiveBetween(1, 200);
-    }
-}
 
 public sealed class SearchClaimsHandler : IQueryHandler<SearchClaimsQuery, PagedResult<ClaimDto>>
 {
@@ -33,7 +23,7 @@ public sealed class SearchClaimsHandler : IQueryHandler<SearchClaimsQuery, Paged
 
     public async Task<PagedResult<ClaimDto>> Handle(SearchClaimsQuery query, CancellationToken cancellationToken)
     {
-        var result = await _claims.SearchForAdminAsync(query.SearchTerm, query.Page, query.PageSize);
+        var result = await _claims.SearchForAdminAsync(query.SearchTerm, Math.Max(query.Page, 1), query.PageSize);
         return result.Map(c => new ClaimDto(c.ClaimId, c.ClaimName, c.IsActive));
     }
 }
@@ -71,11 +61,6 @@ public sealed class GetClaimHandler : IQueryHandler<GetClaimQuery, ClaimWithRole
 public sealed record SearchAvailableClaimsQuery(int RoleId, string? SearchTerm)
     : IQuery<List<ClaimOptionDto>>;
 
-public sealed class SearchAvailableClaimsValidator : AbstractValidator<SearchAvailableClaimsQuery>
-{
-    public SearchAvailableClaimsValidator() => RuleFor(q => q.RoleId).GreaterThan(0);
-}
-
 public sealed class SearchAvailableClaimsHandler
     : IQueryHandler<SearchAvailableClaimsQuery, List<ClaimOptionDto>>
 {
@@ -96,16 +81,7 @@ public sealed class SearchAvailableClaimsHandler
 
 // ------------------- COMENZI -------------------
 
-// Regulile de mai jos cer acces la date (numele e deja luat?) sau tin de drepturile de
-// care depinde codul, deci se intorc ca OperationResult, nu ca exceptie de validare -
-// ecranul arata mesajul utilizatorului.
-
 public sealed record CreateClaimCommand(string ClaimName) : ICommand<OperationResult>;
-
-public sealed class CreateClaimValidator : AbstractValidator<CreateClaimCommand>
-{
-    public CreateClaimValidator() => RuleFor(c => c.ClaimName).NotEmpty().MaximumLength(100);
-}
 
 public sealed class CreateClaimHandler : ICommandHandler<CreateClaimCommand, OperationResult>
 {
@@ -120,33 +96,21 @@ public sealed class CreateClaimHandler : ICommandHandler<CreateClaimCommand, Ope
 
     public async Task<OperationResult> Handle(CreateClaimCommand command, CancellationToken cancellationToken)
     {
-        var name = command.ClaimName.Trim();
+        var created = AppClaim.Create(command.ClaimName);
+        if (!created.Succeeded)
+            return OperationResult.From(created);
 
-        // Drepturile de sistem vin doar din migrari. Altfel, cineva cu claims.manage ar
-        // putea crea un "roles.manage" al lui, daca cel adevarat lipseste din baza.
-        if (Permissions.IsSystemPermission(name))
-            return ClaimRules.ReservedName(name);
-
-        var conflict = await ClaimRules.FindNameConflictAsync(_claims, name, claimId: null);
+        var conflict = await ClaimRules.FindNameConflictAsync(_claims, created.Value.ClaimName, claimId: null);
         if (conflict != null)
             return conflict;
 
-        _claims.Add(new AppClaim { ClaimName = name, IsActive = true });
+        _claims.Add(created.Value);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return OperationResult.Success();
     }
 }
 
 public sealed record RenameClaimCommand(int ClaimId, string ClaimName) : ICommand<OperationResult>;
-
-public sealed class RenameClaimValidator : AbstractValidator<RenameClaimCommand>
-{
-    public RenameClaimValidator()
-    {
-        RuleFor(c => c.ClaimId).GreaterThan(0);
-        RuleFor(c => c.ClaimName).NotEmpty().MaximumLength(100);
-    }
-}
 
 public sealed class RenameClaimHandler : ICommandHandler<RenameClaimCommand, OperationResult>
 {
@@ -165,28 +129,16 @@ public sealed class RenameClaimHandler : ICommandHandler<RenameClaimCommand, Ope
         if (claim == null)
             return ClaimRules.NotFound();
 
-        var name = command.ClaimName.Trim();
-
-        // Salvarea formularului fara nicio schimbare nu este o redenumire.
-        if (string.Equals(claim.ClaimName, name, StringComparison.Ordinal))
-            return OperationResult.Success();
-
-        // Autorizarea cauta drepturile dupa nume. Un drept de sistem redenumit inceteaza
-        // sa mai deschida ecranele pe care le protejeaza.
-        if (Permissions.IsSystemPermission(claim.ClaimName))
-            return OperationResult.Fail(
-                $"Dreptul \"{claim.ClaimName}\" este folosit de aplicatie si nu poate fi redenumit.");
-
-        // Si invers: un drept oarecare, deja acordat unui rol, redenumit in "roles.manage"
-        // ar da acelui rol administrarea tuturor drepturilor.
-        if (Permissions.IsSystemPermission(name))
-            return ClaimRules.ReservedName(name);
-
-        var conflict = await ClaimRules.FindNameConflictAsync(_claims, name, claim.ClaimId);
+        // Unicitatea cere acces la date, deci se verifica aici, inainte ca entitatea sa se
+        // schimbe. Restul regulilor (drept de sistem, nume rezervat, lungime) le aplica Rename.
+        var conflict = await ClaimRules.FindNameConflictAsync(_claims, command.ClaimName.Trim(), claim.ClaimId);
         if (conflict != null)
             return conflict;
 
-        claim.ClaimName = name;
+        var renamed = claim.Rename(command.ClaimName);
+        if (!renamed.Succeeded)
+            return OperationResult.From(renamed);
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return OperationResult.Success();
     }
@@ -194,11 +146,6 @@ public sealed class RenameClaimHandler : ICommandHandler<RenameClaimCommand, Ope
 
 /// <summary>Dezactiveaza dreptul. Nu se sterge fizic (vezi ADR-0007).</summary>
 public sealed record DeactivateClaimCommand(int ClaimId) : ICommand<OperationResult>;
-
-public sealed class DeactivateClaimValidator : AbstractValidator<DeactivateClaimCommand>
-{
-    public DeactivateClaimValidator() => RuleFor(c => c.ClaimId).GreaterThan(0);
-}
 
 public sealed class DeactivateClaimHandler : ICommandHandler<DeactivateClaimCommand, OperationResult>
 {
@@ -217,13 +164,10 @@ public sealed class DeactivateClaimHandler : ICommandHandler<DeactivateClaimComm
         if (claim == null)
             return ClaimRules.NotFound();
 
-        // Un drept de sistem dezactivat dispare din toate rolurile (filtrul global), deci
-        // ecranele protejate de el devin inaccesibile pentru toata lumea.
-        if (Permissions.IsSystemPermission(claim.ClaimName))
-            return OperationResult.Fail(
-                $"Dreptul \"{claim.ClaimName}\" este folosit de aplicatie si nu poate fi dezactivat.");
+        var deactivated = claim.Deactivate();
+        if (!deactivated.Succeeded)
+            return OperationResult.From(deactivated);
 
-        claim.IsActive = false;
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return OperationResult.Success();
     }
@@ -231,11 +175,6 @@ public sealed class DeactivateClaimHandler : ICommandHandler<DeactivateClaimComm
 
 /// <summary>Reactiveaza un drept dezactivat. Rolurile care il aveau il primesc inapoi.</summary>
 public sealed record ReactivateClaimCommand(int ClaimId) : ICommand<OperationResult>;
-
-public sealed class ReactivateClaimValidator : AbstractValidator<ReactivateClaimCommand>
-{
-    public ReactivateClaimValidator() => RuleFor(c => c.ClaimId).GreaterThan(0);
-}
 
 public sealed class ReactivateClaimHandler : ICommandHandler<ReactivateClaimCommand, OperationResult>
 {
@@ -258,19 +197,16 @@ public sealed class ReactivateClaimHandler : ICommandHandler<ReactivateClaimComm
         if (claim.IsActive)
             return OperationResult.Success();
 
-        claim.IsActive = true;
+        claim.Reactivate();
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return OperationResult.Success();
     }
 }
 
-/// <summary>Regulile si mesajele comune comenzilor pe drepturi.</summary>
+/// <summary>Regulile care cer acces la date si mesajele comune comenzilor pe drepturi.</summary>
 internal static class ClaimRules
 {
     public static OperationResult NotFound() => OperationResult.Fail("Dreptul nu exista.");
-
-    public static OperationResult ReservedName(string name)
-        => OperationResult.Fail($"Numele \"{name}\" este rezervat unui drept al aplicatiei.");
 
     /// <summary>
     /// Refuzul, daca numele este deja folosit de alt drept; altfel null.
@@ -284,6 +220,9 @@ internal static class ClaimRules
         string name,
         int? claimId)
     {
+        if (name.Length == 0)
+            return null;
+
         var existing = await claims.GetByNameForAdminAsync(name);
         if (existing == null || existing.ClaimId == claimId)
             return null;

@@ -13,26 +13,15 @@ public class GetGamesForUserTests
 
     private GetGamesForUserHandler CreateSut() => new(_games, _users);
 
-    private static Game GameIn(int gameId, int? domainId, string? domainName)
-        => new()
-        {
-            GameId = gameId,
-            GameName = $"joc-{gameId}",
-            DomainId = domainId,
-            Domain = domainName == null || domainId == null
-                ? null
-                : new TrainingDomain { DomainId = domainId.Value, DomainName = domainName }
-        };
-
     [Fact]
     public async Task IntoarceDoarJocurileDinDomeniileUtilizatorului()
     {
         _users.GetDomainIdsAsync(1).Returns([10]);
         _games.GetActiveWithDomainAsync().Returns(
         [
-            GameIn(1, 10, "Matematica"),
-            GameIn(2, 20, "Chimie"),
-            GameIn(3, null, null)
+            Loaded.Game(1, "joc-1", 10, "Matematica"),
+            Loaded.Game(2, "joc-2", 20, "Chimie"),
+            Loaded.Game(3, "joc-3")
         ]);
 
         var result = await CreateSut().Handle(new GetGamesForUserQuery(1), default);
@@ -47,7 +36,7 @@ public class GetGamesForUserTests
         // Regresie: inainte se faceau trei interogari (utilizator, domenii, jocuri) si
         // un join in memorie. Acum domeniul vine odata cu jocul.
         _users.GetDomainIdsAsync(1).Returns([10]);
-        _games.GetActiveWithDomainAsync().Returns([GameIn(1, 10, "Matematica")]);
+        _games.GetActiveWithDomainAsync().Returns([Loaded.Game(1, "joc-1", 10, "Matematica")]);
 
         var result = await CreateSut().Handle(new GetGamesForUserQuery(1), default);
 
@@ -59,7 +48,7 @@ public class GetGamesForUserTests
     public async Task JocFaraDomeniu_AreNumeleDomeniuluiNull()
     {
         _users.GetDomainIdsAsync(1).Returns([]);
-        _games.GetActiveWithDomainAsync().Returns([GameIn(1, null, null)]);
+        _games.GetActiveWithDomainAsync().Returns([Loaded.Game(1, "joc-1")]);
 
         var result = await CreateSut().Handle(new GetGamesForUserQuery(1), default);
 
@@ -70,7 +59,7 @@ public class GetGamesForUserTests
     public async Task UtilizatorFaraDomenii_NuPrimesteNiciunJoc()
     {
         _users.GetDomainIdsAsync(1).Returns([]);
-        _games.GetActiveWithDomainAsync().Returns([GameIn(1, 10, "Matematica")]);
+        _games.GetActiveWithDomainAsync().Returns([Loaded.Game(1, "joc-1", 10, "Matematica")]);
 
         var result = await CreateSut().Handle(new GetGamesForUserQuery(1), default);
 
@@ -83,16 +72,21 @@ public class GameCommandTests
     private static readonly DateTimeOffset Now = new(2026, 1, 5, 12, 0, 0, TimeSpan.Zero);
 
     private readonly IGameRepository _games = Substitute.For<IGameRepository>();
+    private readonly IDomainRepository _domains = Substitute.For<IDomainRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly FakeTimeProvider _clock = new(Now);
+
+    public GameCommandTests()
+        => _domains.GetForAdminAsync(10).Returns(Loaded.Domain(10, "Matematica"));
 
     [Fact]
     public async Task Create_FoloseresteCeasulInjectatSiSalveazaOData()
     {
-        var handler = new CreateGameHandler(_games, _unitOfWork, _clock);
+        var handler = new CreateGameHandler(_games, _domains, _unitOfWork, _clock);
 
-        await handler.Handle(new CreateGameCommand("Joc nou", "descriere", null, 10), default);
+        var result = await handler.Handle(new CreateGameCommand("Joc nou", "descriere", null, 10), default);
 
+        result.Succeeded.ShouldBeTrue();
         var saved = (Game)_games.ReceivedCalls()
             .First(c => c.GetMethodInfo().Name == nameof(IGameRepository.Add))
             .GetArguments()[0]!;
@@ -104,14 +98,40 @@ public class GameCommandTests
     }
 
     [Fact]
+    public async Task Create_CuDomeniuInexistent_EsteRefuzatInLocDeEroareDeCheieStraina()
+    {
+        _domains.GetForAdminAsync(99).Returns((TrainingDomain?)null);
+        var handler = new CreateGameHandler(_games, _domains, _unitOfWork, _clock);
+
+        var result = await handler.Handle(new CreateGameCommand("Joc nou", null, null, 99), default);
+
+        result.Succeeded.ShouldBeFalse();
+        _games.DidNotReceive().Add(Arg.Any<Game>());
+    }
+
+    [Fact]
+    public async Task Create_CuLinkJavascript_EsteRefuzat()
+    {
+        // Linkul ajunge intr-un href: "javascript:" ar rula cod la click.
+        var handler = new CreateGameHandler(_games, _domains, _unitOfWork, _clock);
+
+        var result = await handler.Handle(
+            new CreateGameCommand("Joc nou", null, "javascript:alert(1)", 10), default);
+
+        result.Succeeded.ShouldBeFalse();
+        _games.DidNotReceive().Add(Arg.Any<Game>());
+    }
+
+    [Fact]
     public async Task Update_ModificaInregistrareaDinComanda()
     {
-        var existing = new Game { GameId = 7, GameName = "vechi", DomainId = 10 };
+        var existing = Loaded.Game(7, "vechi", 10);
         _games.GetForAdminAsync(7).Returns(existing);
-        var handler = new UpdateGameHandler(_games, _unitOfWork);
+        var handler = new UpdateGameHandler(_games, _domains, _unitOfWork);
 
-        await handler.Handle(new UpdateGameCommand(7, "Redenumit", "d", null, null), default);
+        var result = await handler.Handle(new UpdateGameCommand(7, "Redenumit", "d", null, null), default);
 
+        result.Succeeded.ShouldBeTrue();
         existing.GameName.ShouldBe("Redenumit");
         existing.DomainId.ShouldBeNull();
         await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -121,18 +141,18 @@ public class GameCommandTests
     public async Task Update_CandJoculNuExista_NuSalveazaNimic()
     {
         _games.GetForAdminAsync(99).Returns((Game?)null);
-        var handler = new UpdateGameHandler(_games, _unitOfWork);
+        var handler = new UpdateGameHandler(_games, _domains, _unitOfWork);
 
-        var changed = await handler.Handle(new UpdateGameCommand(99, "x", "d", null, null), default);
+        var result = await handler.Handle(new UpdateGameCommand(99, "x", "d", null, null), default);
 
-        changed.ShouldBeFalse();
+        result.Succeeded.ShouldBeFalse();
         await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task Deactivate_NuStergeInregistrarea_DoarODezactiveaza()
     {
-        var existing = new Game { GameId = 7, GameName = "joc", IsActive = true };
+        var existing = Loaded.Game(7, "joc");
         _games.GetForAdminAsync(7).Returns(existing);
         var handler = new DeactivateGameHandler(_games, _unitOfWork);
 
@@ -140,16 +160,5 @@ public class GameCommandTests
 
         existing.IsActive.ShouldBeFalse();
         await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public void Validator_RespingeNumeGolSiDescriereaPreaLunga()
-    {
-        var validator = new CreateGameValidator();
-
-        validator.Validate(new CreateGameCommand("", null, null, null)).IsValid.ShouldBeFalse();
-        validator.Validate(new CreateGameCommand("ok", new string('x', 501), null, null))
-                 .IsValid.ShouldBeFalse();
-        validator.Validate(new CreateGameCommand("ok", "descriere", null, 1)).IsValid.ShouldBeTrue();
     }
 }

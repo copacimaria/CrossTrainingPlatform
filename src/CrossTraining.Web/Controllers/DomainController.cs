@@ -1,6 +1,6 @@
-using CrossTraining.Application.Authorization;
 using CrossTraining.Application.Features.Domains;
 using CrossTraining.Application.Features.Users;
+using CrossTraining.Domain.Authorization;
 using CrossTraining.Web.Models;
 using CrossTraining.Web.Security;
 using MediatR;
@@ -42,7 +42,13 @@ public class DomainController : Controller
         if (!ModelState.IsValid)
             return View("_createDomain", form);
 
-        await _sender.Send(new CreateDomainCommand(form.DomainName, form.IsActive));
+        var result = await _sender.Send(new CreateDomainCommand(form.DomainName, form.IsActive));
+        if (!result.Succeeded)
+        {
+            ModelState.AddModelError(nameof(form.DomainName), result.Error!);
+            return View("_createDomain", form);
+        }
+
         return RedirectToAction("Index");
     }
 
@@ -65,7 +71,13 @@ public class DomainController : Controller
         if (!ModelState.IsValid)
             return View("_editDomain", form);
 
-        await _sender.Send(new UpdateDomainCommand(id, form.DomainName, form.IsActive));
+        var result = await _sender.Send(new UpdateDomainCommand(id, form.DomainName, form.IsActive));
+        if (!result.Succeeded)
+        {
+            ModelState.AddModelError(nameof(form.DomainName), result.Error!);
+            return View("_editDomain", form);
+        }
+
         return RedirectToAction("Index");
     }
 
@@ -85,7 +97,10 @@ public class DomainController : Controller
     [HasPermission(Permissions.Domains.Manage)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
-        await _sender.Send(new DeactivateDomainCommand(id));
+        var result = await _sender.Send(new DeactivateDomainCommand(id));
+        if (!result.Succeeded)
+            return NotFound();
+
         return RedirectToAction("Index");
     }
 
@@ -116,10 +131,19 @@ public class DomainController : Controller
         if (userId == null)
             return RedirectToAction("Register", "UserAuth");
 
-        if (domainIds == null || domainIds.Count == 0)
-            return RedirectToAction("SelectDomain", new { token });
+        var result = await _sender.Send(new SetUserDomainsCommand(userId.Value, domainIds ?? []));
+        if (!result.Succeeded)
+        {
+            // Pagina se reafiseaza cu motivul refuzului (niciun domeniu ales, sau unul care
+            // intre timp a fost dezactivat), cu acelasi token.
+            ModelState.AddModelError(string.Empty, result.Error!);
+            return View("SelectDomain", new SelectDomainViewModel
+            {
+                Token = token,
+                Domains = await _sender.Send(new GetActiveDomainsQuery())
+            });
+        }
 
-        await _sender.Send(new SetUserDomainsCommand(userId.Value, domainIds));
         return RedirectToAction("Login", "UserAuth");
     }
 }

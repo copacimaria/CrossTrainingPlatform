@@ -1,6 +1,6 @@
 using CrossTraining.Application.Abstractions.Persistence;
-using CrossTraining.Application.Authorization;
 using CrossTraining.Application.Features.Roles;
+using CrossTraining.Domain.Authorization;
 using CrossTraining.Domain.Entities;
 using NSubstitute;
 
@@ -17,11 +17,15 @@ public class RoleCommandTests
     private readonly IAppClaimRepository _claims = Substitute.For<IAppClaimRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
-    /// <summary>Un rol existent, gasit dupa id si - ca in SQL Server - dupa nume, fara diferenta de litere.</summary>
-    private AppRole ExistingRole(int id, string name, bool isActive = true)
+    /// <summary>
+    /// Un rol existent, gasit dupa id (cu si fara legaturi) si - ca in SQL Server - dupa nume,
+    /// fara diferenta de litere.
+    /// </summary>
+    private AppRole ExistingRole(int id, string name, bool isActive = true, params int[] claimIds)
     {
-        var role = new AppRole { RoleId = id, RoleName = name, IsActive = isActive };
+        var role = Loaded.Role(id, name, isActive, claimIds);
         _roles.GetForAdminAsync(id).Returns(role);
+        _roles.GetWithClaimLinksAsync(id).Returns(role);
         _roles.GetByNameForAdminAsync(Arg.Is<string>(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase)))
               .Returns(role);
         return role;
@@ -29,17 +33,12 @@ public class RoleCommandTests
 
     private AppClaim ExistingClaim(int id, string name, bool isActive = true)
     {
-        var claim = new AppClaim { ClaimId = id, ClaimName = name, IsActive = isActive };
+        var claim = Loaded.Claim(id, name, isActive);
         _claims.GetForAdminAsync(id).Returns(claim);
         return claim;
     }
 
-    private RoleClaim ExistingLink(int roleId, int claimId)
-    {
-        var link = new RoleClaim { RoleId = roleId, ClaimId = claimId };
-        _roles.GetRoleClaimAsync(roleId, claimId).Returns(link);
-        return link;
-    }
+    private static int[] ClaimIdsOf(AppRole role) => role.RoleClaims.Select(rc => rc.ClaimId).ToArray();
 
     private Task<int> NothingWasSaved() => _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
 
@@ -188,30 +187,28 @@ public class RoleCommandTests
     [Fact]
     public async Task Revoke_DreptDeSistemDinAdmin_EsteRefuzat()
     {
-        ExistingRole(2, SystemRoles.Admin);
+        var admin = ExistingRole(2, SystemRoles.Admin, claimIds: [4]);
         ExistingClaim(4, Permissions.Roles.Manage);
-        ExistingLink(2, 4);
 
         var result = await new RevokeClaimFromRoleHandler(_roles, _claims, _unitOfWork)
             .Handle(new RevokeClaimFromRoleCommand(2, 4), default);
 
         result.Succeeded.ShouldBeFalse();
-        _roles.DidNotReceive().RemoveClaim(Arg.Any<RoleClaim>());
+        ClaimIdsOf(admin).ShouldBe([4]);
         await NothingWasSaved();
     }
 
     [Fact]
     public async Task Revoke_DreptObisnuitDinAdmin_EstePermis()
     {
-        ExistingRole(2, SystemRoles.Admin);
+        var admin = ExistingRole(2, SystemRoles.Admin, claimIds: [4, 9]);
         ExistingClaim(9, "rapoarte.view");
-        var link = ExistingLink(2, 9);
 
         var result = await new RevokeClaimFromRoleHandler(_roles, _claims, _unitOfWork)
             .Handle(new RevokeClaimFromRoleCommand(2, 9), default);
 
         result.Succeeded.ShouldBeTrue();
-        _roles.Received(1).RemoveClaim(link);
+        ClaimIdsOf(admin).ShouldBe([4]);
         await SavedOnce();
     }
 
@@ -219,15 +216,14 @@ public class RoleCommandTests
     public async Task Revoke_DreptDeSistemDinAltRol_EstePermis()
     {
         // Protectia priveste doar rolul Admin: alte roluri pot primi si pierde orice drept.
-        ExistingRole(5, "Editori");
+        var role = ExistingRole(5, "Editori", claimIds: [4]);
         ExistingClaim(4, Permissions.Roles.Manage);
-        var link = ExistingLink(5, 4);
 
         var result = await new RevokeClaimFromRoleHandler(_roles, _claims, _unitOfWork)
             .Handle(new RevokeClaimFromRoleCommand(5, 4), default);
 
         result.Succeeded.ShouldBeTrue();
-        _roles.Received(1).RemoveClaim(link);
+        ClaimIdsOf(role).ShouldBeEmpty();
     }
 
     // ------------------- ACORDARE -------------------
@@ -235,44 +231,54 @@ public class RoleCommandTests
     [Fact]
     public async Task Grant_DreptInexistent_EsteRefuzatInLocDeEroareDeCheieStraina()
     {
-        ExistingRole(5, "Editori");
-        _roles.GetRoleClaimAsync(5, 99).Returns((RoleClaim?)null);
+        var role = ExistingRole(5, "Editori");
         _claims.GetForAdminAsync(99).Returns((AppClaim?)null);
 
         var result = await new GrantClaimToRoleHandler(_roles, _claims, _unitOfWork)
             .Handle(new GrantClaimToRoleCommand(5, 99), default);
 
         result.Succeeded.ShouldBeFalse();
-        _roles.DidNotReceive().AddClaim(Arg.Any<RoleClaim>());
+        role.RoleClaims.ShouldBeEmpty();
         await NothingWasSaved();
     }
 
     [Fact]
     public async Task Grant_DreptDezactivat_EsteRefuzat()
     {
-        ExistingRole(5, "Editori");
+        var role = ExistingRole(5, "Editori");
         ExistingClaim(9, "rapoarte.view", isActive: false);
-        _roles.GetRoleClaimAsync(5, 9).Returns((RoleClaim?)null);
 
         var result = await new GrantClaimToRoleHandler(_roles, _claims, _unitOfWork)
             .Handle(new GrantClaimToRoleCommand(5, 9), default);
 
         result.Succeeded.ShouldBeFalse();
-        _roles.DidNotReceive().AddClaim(Arg.Any<RoleClaim>());
+        role.RoleClaims.ShouldBeEmpty();
     }
 
     [Fact]
     public async Task Grant_PeCaleaFericita_AdaugaLegatura()
     {
-        ExistingRole(5, "Editori");
+        var role = ExistingRole(5, "Editori");
         ExistingClaim(9, "rapoarte.view");
-        _roles.GetRoleClaimAsync(5, 9).Returns((RoleClaim?)null);
 
         var result = await new GrantClaimToRoleHandler(_roles, _claims, _unitOfWork)
             .Handle(new GrantClaimToRoleCommand(5, 9), default);
 
         result.Succeeded.ShouldBeTrue();
-        _roles.Received(1).AddClaim(Arg.Is<RoleClaim>(rc => rc.RoleId == 5 && rc.ClaimId == 9));
+        ClaimIdsOf(role).ShouldBe([9]);
         await SavedOnce();
+    }
+
+    [Fact]
+    public async Task Grant_DreptDejaAcordat_EsteIdempotent()
+    {
+        var role = ExistingRole(5, "Editori", claimIds: [9]);
+        ExistingClaim(9, "rapoarte.view");
+
+        var result = await new GrantClaimToRoleHandler(_roles, _claims, _unitOfWork)
+            .Handle(new GrantClaimToRoleCommand(5, 9), default);
+
+        result.Succeeded.ShouldBeTrue();
+        ClaimIdsOf(role).ShouldBe([9]);
     }
 }
