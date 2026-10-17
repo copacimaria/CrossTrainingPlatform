@@ -1,33 +1,64 @@
 @model UserProfileDto
 @{
-    ViewData["Title"] = "Profil";
+    ViewData["Title"] = "Profilul meu";
+
+    // Domeniile vin ca lista separata prin virgula (UserProfileDto.Domains).
+    var domains = Model.Domains.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 }
 
-<div class="profile-page">
-    <div class="profile-card">
-        <i class="bi bi-person-circle profile-icon"></i>
-
-        <h2 class="profile-name">@Model.FullName</h2>
-        <p class="profile-email">@Model.Email</p>
-
-        @if (TempData["Success"] != null)
-        {
-            <div class="profile-success">@TempData["Success"]</div>
-        }
-
-        <div class="profile-info">
-            <p><strong>Rol:</strong> @Model.Role</p>
-            <p><strong>Domenii selectate:</strong> @Model.Domains</p>
+<div class="profile">
+    <section class="panel panel--glow panel__body profile-hero">
+        <div class="avatar-xl"><span>@Model.FullName.Initials()</span></div>
+        <div class="min-w-0">
+            <span class="eyebrow"><i class="bi bi-person-fill"></i> Profilul meu</span>
+            <h1 class="mt-2">@Model.FullName</h1>
+            <p class="profile-hero__email">@Model.Email</p>
+            <span class="pill pill--info">@Model.Role</span>
         </div>
+    </section>
 
-        <ul class="profile-links">
-            <li><a asp-controller="Profile" asp-action="ChangeDomain">Schimbare domenii</a></li>
-            <li><a asp-controller="Profile" asp-action="ChangePassword">Schimbare parola</a></li>
-            <li>
-                <form asp-controller="UserAuth" asp-action="Logout" method="post" class="profile-logout-form">
-                    <button type="submit" class="profile-logout-btn">Delogare</button>
-                </form>
-            </li>
-        </ul>
+    @if (TempData["Success"] != null)
+    {
+        <div class="notice notice--success mt-3" role="status">
+            <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
+        </div>
+    }
+
+    <h2 class="profile-section-title">Domeniile mele</h2>
+    <div class="panel panel__body">
+        @if (domains.Length > 0)
+        {
+            <div class="chips">
+                @foreach (var domain in domains)
+                {
+                    <span class="tag"><i class="bi bi-diagram-3"></i> @domain</span>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-soft mb-0">Nu ai ales inca niciun domeniu, deci catalogul nu are recomandari pentru tine.</p>
+        }
+    </div>
+
+    <h2 class="profile-section-title">Setarile contului</h2>
+    <div class="action-grid">
+        <a class="panel action-tile" asp-controller="Profile" asp-action="ChangeDomain">
+            <span class="icon-tile"><i class="bi bi-diagram-3-fill"></i></span>
+            <div><strong>Schimba domeniile</strong><span>Ajusteaza recomandarile din catalog</span></div>
+            <i class="bi bi-chevron-right"></i>
+        </a>
+        <a class="panel action-tile" asp-controller="Profile" asp-action="ChangePassword">
+            <span class="icon-tile"><i class="bi bi-shield-lock-fill"></i></span>
+            <div><strong>Schimba parola</strong><span>Recomandat periodic</span></div>
+            <i class="bi bi-chevron-right"></i>
+        </a>
+        <form asp-controller="UserAuth" asp-action="Logout" method="post">
+            <button type="submit" class="panel action-tile action-tile--danger">
+                <span class="icon-tile"><i class="bi bi-box-arrow-right"></i></span>
+                <div><strong>Delogare</strong><span>Inchide sesiunea pe acest dispozitiv</span></div>
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </form>
     </div>
 </div>

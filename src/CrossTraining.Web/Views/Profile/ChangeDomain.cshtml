@@ -1,45 +1,36 @@
 @model ChangeDomainViewModel
 @{
-    ViewData["Title"] = "Schimbare domenii";
+    ViewData["Title"] = "Domeniile mele";
 }
 
-<div class="page-wrapper">
-    <div class="auth-card">
-        <h2 class="auth-title">Change Domains</h2>
+<section class="auth">
+    <div class="auth__grid auth__grid--single">
+        <div class="panel panel--glow panel__body auth-card">
+            <a class="back-link" asp-controller="Profile" asp-action="Index"><i class="bi bi-arrow-left"></i> Inapoi la profil</a>
+            <h2>Domeniile mele</h2>
+            <p class="auth-card__sub">
+                Alege domeniile care te intereseaza. Catalogul isi ordoneaza recomandarile dupa ele.
+            </p>
 
-        @if (!ViewData.ModelState.IsValid)
-        {
-            <div class="form-errors">
-                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-                {
-                    <div>@error.ErrorMessage</div>
-                }
-            </div>
-        }
+            <partial name="_FormErrors" />
 
-        <form asp-controller="Profile" asp-action="ChangeDomain" method="post">
-            <div class="form-group">
-                <label>Selecteaza unul sau mai multe domenii:</label>
-
-                <div class="domain-checkbox-list">
+            <form asp-controller="Profile" asp-action="ChangeDomain" method="post">
+                <div class="choice-grid">
                     @foreach (var d in Model.AvailableDomains)
                     {
-                        <label class="domain-checkbox-item">
-                            <input type="checkbox"
-                                   name="SelectedDomainIds"
-                                   value="@d.DomainId"
+                        <label class="choice">
+                            <input type="checkbox" class="choice__input" name="SelectedDomainIds" value="@d.DomainId"
                                    checked="@(Model.SelectedDomainIds.Contains(d.DomainId))" />
-                            <span>@d.DomainName</span>
+                            <span class="choice__body">@d.DomainName</span>
                         </label>
                     }
                 </div>
-            </div>
 
-            <button type="submit" class="login-btn auth-submit">Save</button>
-
-            <p class="login-link">
-                <a asp-controller="Profile" asp-action="Index">Inapoi la profil</a>
-            </p>
-        </form>
+                <div class="form-actions">
+                    <a class="btn btn-glass" asp-controller="Profile" asp-action="Index">Renunta</a>
+                    <button type="submit" class="btn btn-glow"><i class="bi bi-check2"></i> Salveaza</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
+</section>

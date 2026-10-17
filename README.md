@@ -170,6 +170,19 @@ AppUser ──┬── RoleId ──> AppRole ──< AppClaim_AppRole >── 
 `AppUser <-> Domain` si `AppRole <-> AppClaim` sunt relatii many-to-many prin tabele
 pivot. `Game` apartine unui singur `Domain`.
 
+### Interfata
+
+Tema intunecata, „futurista”: fundal cu aurora si grila, panouri de sticla, degrade
+cyan-violet. Interfata este in romana.
+
+| Ce | Unde |
+|---|---|
+| Tema: culori, tipografie, componente (butoane, formulare, tabele, modale, carduri) | `wwwroot/css/app.css` - o singura foaie de stil, peste Bootstrap 5.1 |
+| Modale, formulare AJAX, mesaje (toasts) | `wwwroot/js/admin.js`, legat prin atribute `data-*` (ADR-0012) |
+| Catalogul: cautare instantanee, filtre pe domeniu si „recomandate” | `wwwroot/js/games.js` |
+| Initialele si culoarea fiecarei aplicatii | `Web/Extensions/DisplayExtensions.cs` |
+| Fonturi | ale sistemului (Bahnschrift, Segoe UI): CSP-ul nu permite fonturi de pe alte domenii |
+
 ---
 
 ## Rulare locala

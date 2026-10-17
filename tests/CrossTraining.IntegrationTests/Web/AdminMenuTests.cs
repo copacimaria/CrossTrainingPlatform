@@ -26,7 +26,7 @@ namespace CrossTraining.IntegrationTests.Web;
 /// </summary>
 public sealed class AdminMenuTests
 {
-    private const string AdminMenu = "Admin Settings";
+    private const string AdminMenu = "id=\"adminMenu\"";
     private const string RolesLink = "href=\"/AppRoles/Index\"";
     private const string ClaimsLink = "href=\"/AppClaims/Index\"";
     private const string DomainsLink = "href=\"/Domain/Index\"";

@@ -1,26 +1,113 @@
 ﻿@{
-    ViewData["Title"] = "About";
+    ViewData["Title"] = "Despre platforma";
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
 }
 
-<div class="description-container">
-    <h2>About Cross Training Platform</h2>
-    <p>
-        Cross Training Platform is an <strong>innovative digital platform</strong> that offers a wide range of
-        <strong>interactive games and simulations</strong>, designed to replicate various fields of study
-        and professional environments. By providing <strong>realistic virtual experiences</strong>, the platform
-        eliminates the need for expensive physical resources that can negatively impact the environment,
-        promoting <strong>sustainability</strong> and <strong>eco-friendly practices</strong>.
-    </p>
-    <p>
-        The core mission of Cross Training Platform is to seamlessly integrate technology into education and training,
-        enabling users to acquire <strong>practical skills</strong> and knowledge in a <strong>safe</strong>,
-        <strong>cost-effective</strong>, and <strong>environmentally conscious</strong> way. Through engaging simulations,
-        learners can experiment, make decisions, and explore scenarios that would otherwise require
-        significant resources, time, or risk.
-    </p>
-    <p>
-        This platform exemplifies how <strong>modern technology</strong> can transform traditional learning,
-        bridging the gap between theoretical knowledge and hands-on experience while fostering awareness
-        about <strong>sustainable practices</strong>.
-    </p>
-</div>
+<section class="hero">
+    <div class="hero__grid">
+        <div>
+            <span class="eyebrow"><i class="bi bi-lightning-charge-fill"></i> Platforma de invatare digitala</span>
+            <h1 class="display">Invata prin <span class="text-gradient">simulare</span>, nu din manual.</h1>
+            <p class="lead-x">
+                CrossTraining aduna intr-un singur loc jocuri si simulari interactive care reproduc
+                domenii de studiu si medii profesionale reale. Experimentezi, iei decizii si inveti
+                din greseli intr-un spatiu sigur, fara echipamente scumpe si fara risipa de resurse.
+            </p>
+
+            <div class="hero__actions">
+                @if (isAuthenticated)
+                {
+                    <a class="btn btn-glow btn-lg" href="@Url.Action("DisplayGamesBasedOnDomain", "Games")">
+                        <i class="bi bi-grid-1x2-fill"></i> Deschide catalogul
+                    </a>
+                }
+                else
+                {
+                    <a class="btn btn-glow btn-lg" href="@Url.Action("Register", "UserAuth")">
+                        <i class="bi bi-rocket-takeoff-fill"></i> Creeaza cont gratuit
+                    </a>
+                    <a class="btn btn-glass btn-lg" href="@Url.Action("Login", "UserAuth")">Am deja cont</a>
+                }
+            </div>
+        </div>
+
+        <div class="hero__visual">
+            <div class="holo" aria-hidden="true">
+                <div class="holo__ring holo__ring--1"></div>
+                <div class="holo__ring holo__ring--2"></div>
+                <div class="holo__ring holo__ring--3"></div>
+                <div class="holo__core"></div>
+                <div class="holo__tile holo__tile--a"><i class="bi bi-mortarboard-fill"></i></div>
+                <div class="holo__tile holo__tile--b"><i class="bi bi-cpu-fill"></i></div>
+                <div class="holo__tile holo__tile--c"><i class="bi bi-joystick"></i></div>
+                <div class="holo__tile holo__tile--d"><i class="bi bi-graph-up-arrow"></i></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <span class="eyebrow"><i class="bi bi-stars"></i> De ce CrossTraining</span>
+        <h2>Tehnologia moderna, pusa in slujba invatarii</h2>
+        <p>Legam teoria de practica: experiente virtuale realiste, alese pentru ce studiezi.</p>
+    </div>
+
+    <div class="feature-grid">
+        <article class="panel feature">
+            <div class="icon-tile"><i class="bi bi-badge-vr-fill"></i></div>
+            <h3>Simulari realiste</h3>
+            <p>Medii virtuale care reproduc situatii din domeniul tau, in care exersezi fara riscuri.</p>
+        </article>
+        <article class="panel feature">
+            <div class="icon-tile"><i class="bi bi-bullseye"></i></div>
+            <h3>Potrivite pentru tine</h3>
+            <p>Alegi domeniile care te intereseaza, iar catalogul iti recomanda aplicatiile potrivite.</p>
+        </article>
+        <article class="panel feature">
+            <div class="icon-tile"><i class="bi bi-tree-fill"></i></div>
+            <h3>Sustenabil</h3>
+            <p>Experientele virtuale inlocuiesc materialele fizice costisitoare si risipa de resurse.</p>
+        </article>
+        <article class="panel feature">
+            <div class="icon-tile"><i class="bi bi-shield-check"></i></div>
+            <h3>Sigur si accesibil</h3>
+            <p>Inveti in ritmul tau, de oriunde, cu un cont protejat si date pastrate in siguranta.</p>
+        </article>
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <span class="eyebrow"><i class="bi bi-signpost-split-fill"></i> Cum functioneaza</span>
+        <h2>Trei pasi pana la prima aplicatie</h2>
+    </div>
+
+    <div class="steps">
+        <div class="panel step">
+            <h3>Iti creezi contul</h3>
+            <p>Un nume, o adresa de email si o parola. Dureaza mai putin de un minut.</p>
+        </div>
+        <div class="panel step">
+            <h3>Alegi domeniile</h3>
+            <p>Spui ce te intereseaza; poti schimba oricand alegerea din profil.</p>
+        </div>
+        <div class="panel step">
+            <h3>Descoperi aplicatiile</h3>
+            <p>Catalogul iti arata intai aplicatiile recomandate pentru domeniile tale.</p>
+        </div>
+    </div>
+
+    @if (!isAuthenticated)
+    {
+        <div class="panel panel--glow cta">
+            <h2>Gata sa incepi?</h2>
+            <p>Invatarea viitorului este la un click distanta.</p>
+            <div class="hero__actions justify-content-center mt-3">
+                <a class="btn btn-glow btn-lg" href="@Url.Action("Register", "UserAuth")">
+                    <i class="bi bi-rocket-takeoff-fill"></i> Creeaza cont
+                </a>
+            </div>
+        </div>
+    }
+</section>

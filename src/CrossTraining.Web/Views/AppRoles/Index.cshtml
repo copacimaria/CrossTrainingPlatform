@@ -1,155 +1,166 @@
 @model IPagedList<RoleDto>
 @{
     ViewData["Title"] = "Roluri";
-}
 
-<br /><br />
-
-<!-- Modale -->
-<div class="modal fade" id="createRoleModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog admin-modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Creare rol:</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="contentAddRole"></div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="editRoleModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog admin-modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Editeaza rol:</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="contentEditRole"></div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="deleteRoleModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog admin-modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirmare stergere rol:</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="contentDeleteRole"></div>
-        </div>
-    </div>
-</div>
-
-@{
     // Butoanele urmeaza drepturile cerute de actiunile la care duc (vezi AppClaims/Index).
     var canManage = User.HasPermission(Permissions.Roles.Manage);
+    var search = ViewBag.SelectedRole as string;
 }
 
-<div class="d-flex justify-content-between align-items-center admin-header">
-    <h1 class="mb-0 admin-heading">Roluri</h1>
+<!-- Modale -->
+<div class="modal fade" id="createRoleModal" tabindex="-1" aria-labelledby="createRoleTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createRoleTitle"><i class="bi bi-plus-circle"></i> Rol nou</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Inchide"></button>
+            </div>
+            <div class="modal-body"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editRoleModal" tabindex="-1" aria-labelledby="editRoleTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editRoleTitle"><i class="bi bi-pencil-square"></i> Redenumeste rolul</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Inchide"></button>
+            </div>
+            <div class="modal-body"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteRoleModal" tabindex="-1" aria-labelledby="deleteRoleTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteRoleTitle"><i class="bi bi-trash3"></i> Stergere rol</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Inchide"></button>
+            </div>
+            <div class="modal-body"></div>
+        </div>
+    </div>
+</div>
+
+<partial name="_AdminTabs" />
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow"><i class="bi bi-person-badge-fill"></i> Administrare</span>
+        <h1>Roluri</h1>
+        <p>
+            Fiecare utilizator are un rol, iar rolul ii da drepturile. Rolurile „Sistem” sunt
+            folosite de aplicatie si nu pot fi redenumite sau dezactivate.
+        </p>
+    </div>
     @if (canManage)
     {
-        <button type="button" data-modal-url="@Url.Action("Create")" data-modal="#createRoleModal"
-                class="btn btn-dark fw-bold">
-            <i class="bi bi-plus-circle me-2"></i> Creeaza un rol nou
+        <button type="button" class="btn btn-glow" data-modal-url="@Url.Action("Create")" data-modal="#createRoleModal">
+            <i class="bi bi-plus-lg"></i> Rol nou
         </button>
     }
 </div>
 
-<div class="col admin-text-light">
-    <!-- Filtre -->
-    <div class="d-flex mb-3">
-        <form asp-action="Index" method="get" class="d-flex gap-3 admin-filter-form">
-            <div>
-                <label for="roleSearch" class="form-label mb-0 admin-filter-label">Cauta rolul:</label>
-                <input type="text" id="roleSearch" name="roleSearch" placeholder="Cauta dupa nume"
-                       class="form-control form-control-sm admin-filter-input"
-                       value="@(ViewBag.SelectedRole ?? "")" />
-            </div>
-            <button type="submit" class="btn btn-success mt-4 fw-bold">
-                <i class="bi bi-search"></i> Filtreaza
-            </button>
-            <a asp-action="Index" class="btn btn-danger mt-4 fw-bold">
-                <i class="bi bi-x-circle"></i> Reseteaza
-            </a>
-        </form>
-    </div>
+<div class="panel">
+    <form asp-action="Index" method="get" class="toolbar" role="search">
+        <div class="input-icon">
+            <i class="bi bi-search"></i>
+            <input type="search" id="roleSearch" name="roleSearch" class="input" placeholder="Cauta dupa nume"
+                   aria-label="Cauta un rol" value="@(search ?? "")" />
+        </div>
+        <button type="submit" class="btn btn-glass"><i class="bi bi-funnel"></i> Filtreaza</button>
+        @if (!string.IsNullOrEmpty(search))
+        {
+            <a asp-action="Index" class="btn btn-glass"><i class="bi bi-x-lg"></i> Reseteaza</a>
+        }
+    </form>
 
-    <table class="table table-hover admin-text-light">
-        <thead>
-            <tr>
-                <th class="fw-bold">Nume rol</th>
-                <th class="fw-bold">Stare</th>
-                <th class="fw-bold">Drepturi din rol</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (Model != null)
-            {
-                foreach (var item in Model)
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nume</th>
+                    <th>Stare</th>
+                    <th>Drepturi</th>
+                    <th class="text-end">Actiuni</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model == null || Model.Count == 0)
                 {
-                    <tr class="@(item.IsActive ? "" : "admin-row-inactive")">
-                        <td>@item.RoleName</td>
-                        <td>
-                            @if (item.IsActive)
-                            {
-                                <span class="badge bg-success">Activ</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-secondary">Dezactivat</span>
-                            }
-                            @if (item.IsSystem)
-                            {
-                                <span class="badge bg-warning text-dark"
-                                      title="Folosit de aplicatie: nu poate fi redenumit sau dezactivat">Sistem</span>
-                            }
-                        </td>
-                        <td>
-                            <a asp-controller="AppRoles" asp-action="Details" asp-route-id="@item.RoleId"
-                               class="btn btn-info btn-sm fw-bold">
-                                <i class="bi bi-plus-circle"></i> Drepturi
-                            </a>
-                        </td>
-                        <td>
-                            @* Atributele data-* le leaga admin.js (vezi AppClaims/Index). *@
-                            @if (canManage && !item.IsSystem)
-                            {
-                                <button type="button" class="edit-link" title="Editeaza"
-                                        data-modal-url="@Url.Action("Edit", new { id = item.RoleId })"
-                                        data-modal="#editRoleModal">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                            }
-                            @if (canManage && !item.IsSystem && item.IsActive)
-                            {
-                                <button type="button" class="delete-link" title="Sterge"
-                                        data-modal-url="@Url.Action("Delete", new { id = item.RoleId })"
-                                        data-modal="#deleteRoleModal">
-                                    <i class="bi bi-trash3"></i>
-                                </button>
-                            }
-                            @if (canManage && !item.IsActive)
-                            {
-                                <form asp-action="Reactivate" asp-route-id="@item.RoleId" method="post" class="d-inline"
-                                      data-ajax-form data-toast="Rolul a fost reactivat!" data-toast-color="green"
-                                      data-confirm="@($"Reactivati rolul \"{item.RoleName}\"? Utilizatorii lui primesc inapoi drepturile rolului.")">
-                                    <button type="submit" class="reactivate-link" title="Reactiveaza">
-                                        <i class="bi bi-arrow-counterclockwise"></i>
-                                    </button>
-                                </form>
-                            }
-                        </td>
-                    </tr>
+                    <tr><td colspan="4" class="table-empty">Niciun rol gasit.</td></tr>
                 }
-            }
-        </tbody>
-    </table>
-
-    <div class="pagination-container d-flex justify-content-center mb-5">
-        @Html.PagedListPager(Model, page => Url.Action("Index", "AppRoles", new { page, RoleSearch = ViewBag.SelectedRole }))
+                else
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr class="@(item.IsActive ? "" : "row-inactive")">
+                            <td class="cell-name">@item.RoleName</td>
+                            <td>
+                                @if (item.IsActive)
+                                {
+                                    <span class="pill pill--success">Activ</span>
+                                }
+                                else
+                                {
+                                    <span class="pill pill--muted">Dezactivat</span>
+                                }
+                                @if (item.IsSystem)
+                                {
+                                    <span class="pill pill--warning"
+                                          title="Folosit de aplicatie: nu poate fi redenumit sau dezactivat">Sistem</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-controller="AppRoles" asp-action="Details" asp-route-id="@item.RoleId" class="btn btn-glass btn-sm">
+                                    <i class="bi bi-key"></i> Vezi drepturile
+                                </a>
+                            </td>
+                            <td class="cell-actions">
+                                @* Atributele data-* le leaga admin.js (vezi AppClaims/Index). *@
+                                @if (canManage && !item.IsSystem)
+                                {
+                                    <button type="button" class="icon-btn icon-btn--edit" title="Redenumeste"
+                                            aria-label="Redenumeste @item.RoleName"
+                                            data-modal-url="@Url.Action("Edit", new { id = item.RoleId })"
+                                            data-modal="#editRoleModal">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                }
+                                @if (canManage && !item.IsSystem && item.IsActive)
+                                {
+                                    <button type="button" class="icon-btn icon-btn--danger" title="Sterge"
+                                            aria-label="Sterge @item.RoleName"
+                                            data-modal-url="@Url.Action("Delete", new { id = item.RoleId })"
+                                            data-modal="#deleteRoleModal">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                }
+                                @if (canManage && !item.IsActive)
+                                {
+                                    <form asp-action="Reactivate" asp-route-id="@item.RoleId" method="post" class="d-inline"
+                                          data-ajax-form data-toast="Rolul a fost reactivat!" data-toast-color="green"
+                                          data-confirm="@($"Reactivati rolul \"{item.RoleName}\"? Utilizatorii lui primesc inapoi drepturile rolului.")">
+                                        <button type="submit" class="icon-btn icon-btn--restore" title="Reactiveaza"
+                                                aria-label="Reactiveaza @item.RoleName">
+                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
     </div>
+
+    @if (Model != null && Model.PageCount > 1)
+    {
+        <div class="pager">
+            @Html.PagedListPager(Model, page => Url.Action("Index", "AppRoles", new { page, roleSearch = search }))
+        </div>
+    }
 </div>

@@ -1,168 +1,181 @@
 @model IPagedList<ClaimDto>
 @{
-    ViewData["Title"] = "Claim-uri";
-}
+    ViewData["Title"] = "Drepturi";
 
-<br /><br />
-
-<!-- Modale -->
-<div class="modal fade" id="createClaimModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog admin-modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Creare claim:</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="contentAddClaim"></div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="editClaimModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog admin-modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Editeaza claim-ul:</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="contentEditClaim"></div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="deleteClaimModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog admin-modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirmare stergere claim</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="contentDeleteClaim"></div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="detailsClaimModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog admin-modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Detalii claim</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="contentDetailsClaim"></div>
-        </div>
-    </div>
-</div>
-
-@{
     // Butoanele urmeaza drepturile cerute de actiunile la care duc. Inainte, view-ul
     // cauta claim-uri cu nume vechi ("CreateClaim", "EditClaim"...) pe care sistemul de
     // drepturi nu le mai emite, deci un admin nou nu vedea niciun buton.
     var canManage = User.HasPermission(Permissions.Claims.Manage);
+    var search = ViewBag.SelectedClaim as string;
 }
 
-<div class="d-flex justify-content-between align-items-center admin-header">
-    <h1 class="mb-0">Claim-uri</h1>
+<!-- Modale -->
+<div class="modal fade" id="createClaimModal" tabindex="-1" aria-labelledby="createClaimTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createClaimTitle"><i class="bi bi-plus-circle"></i> Drept nou</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Inchide"></button>
+            </div>
+            <div class="modal-body"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editClaimModal" tabindex="-1" aria-labelledby="editClaimTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editClaimTitle"><i class="bi bi-pencil-square"></i> Redenumeste dreptul</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Inchide"></button>
+            </div>
+            <div class="modal-body"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteClaimModal" tabindex="-1" aria-labelledby="deleteClaimTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteClaimTitle"><i class="bi bi-trash3"></i> Stergere drept</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Inchide"></button>
+            </div>
+            <div class="modal-body"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detailsClaimModal" tabindex="-1" aria-labelledby="detailsClaimTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailsClaimTitle"><i class="bi bi-info-circle"></i> Detalii drept</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Inchide"></button>
+            </div>
+            <div class="modal-body"></div>
+        </div>
+    </div>
+</div>
+
+<partial name="_AdminTabs" />
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow"><i class="bi bi-key-fill"></i> Administrare</span>
+        <h1>Drepturi</h1>
+        <p>
+            Drepturile controleaza ce poate face fiecare rol. Cele marcate „Sistem” sunt folosite
+            de aplicatie si nu pot fi redenumite sau dezactivate.
+        </p>
+    </div>
     @if (canManage)
     {
-        <button type="button" data-modal-url="@Url.Action("Create")" data-modal="#createClaimModal"
-                class="btn btn-dark fw-bold">
-            <i class="bi bi-plus-circle me-2"></i> Creeaza un nou claim
+        <button type="button" class="btn btn-glow" data-modal-url="@Url.Action("Create")" data-modal="#createClaimModal">
+            <i class="bi bi-plus-lg"></i> Drept nou
         </button>
     }
 </div>
 
-<div class="col">
-    <!-- Filtre -->
-    <div class="d-flex mb-3">
-        <form asp-action="Index" method="get" class="d-flex gap-3 admin-filter-form">
-            <div>
-                <label for="claimSearch" class="form-label mb-0 admin-filter-label">Cauta un claim:</label>
-                <input type="text" id="claimSearch" name="claimSearch" placeholder="Cauta dupa nume"
-                       class="form-control form-control-sm admin-filter-input"
-                       value="@(ViewBag.SelectedClaim ?? "")" />
-            </div>
-            <button type="submit" class="btn btn-success mt-4 fw-bold">
-                <i class="bi bi-search"></i> Filtreaza
-            </button>
-            <a asp-action="Index" class="btn btn-danger mt-4 fw-bold">
-                <i class="bi bi-x-circle"></i> Reseteaza
-            </a>
-        </form>
-    </div>
+<div class="panel">
+    <form asp-action="Index" method="get" class="toolbar" role="search">
+        <div class="input-icon">
+            <i class="bi bi-search"></i>
+            <input type="search" id="claimSearch" name="claimSearch" class="input" placeholder="Cauta dupa nume"
+                   aria-label="Cauta un drept" value="@(search ?? "")" />
+        </div>
+        <button type="submit" class="btn btn-glass"><i class="bi bi-funnel"></i> Filtreaza</button>
+        @if (!string.IsNullOrEmpty(search))
+        {
+            <a asp-action="Index" class="btn btn-glass"><i class="bi bi-x-lg"></i> Reseteaza</a>
+        }
+    </form>
 
-    <table class="table table-hover">
-        <thead>
-            <tr>
-                <th class="fw-bold">Nume claim</th>
-                <th class="fw-bold">Stare</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (Model != null)
-            {
-                foreach (var item in Model)
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nume</th>
+                    <th>Stare</th>
+                    <th class="text-end">Actiuni</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model == null || Model.Count == 0)
                 {
-                    <tr class="@(item.IsActive ? "" : "admin-row-inactive")">
-                        <td>@item.ClaimName</td>
-                        <td>
-                            @if (item.IsActive)
-                            {
-                                <span class="badge bg-success">Activ</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-secondary">Dezactivat</span>
-                            }
-                            @if (item.IsSystem)
-                            {
-                                <span class="badge bg-warning text-dark"
-                                      title="Folosit de aplicatie: nu poate fi redenumit sau dezactivat">Sistem</span>
-                            }
-                        </td>
-                        <td>
-                            @* Fara onclick: atributele data-* le leaga admin.js (vezi comentariul
-                               de la inceputul fisierului), iar CSP-ul interzice scripturile inline. *@
-                            <button type="button" class="view-link" title="Detalii"
-                                    data-modal-url="@Url.Action("Details", new { id = item.ClaimId })"
-                                    data-modal="#detailsClaimModal">
-                                <i class="bi bi-eye-fill"></i>
-                            </button>
-                            @if (canManage && !item.IsSystem)
-                            {
-                                <button type="button" class="edit-link" title="Editeaza"
-                                        data-modal-url="@Url.Action("Edit", new { id = item.ClaimId })"
-                                        data-modal="#editClaimModal">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                            }
-                            @if (canManage && !item.IsSystem && item.IsActive)
-                            {
-                                <button type="button" class="delete-link" title="Sterge"
-                                        data-modal-url="@Url.Action("Delete", new { id = item.ClaimId })"
-                                        data-modal="#deleteClaimModal">
-                                    <i class="bi bi-trash3"></i>
-                                </button>
-                            }
-                            @if (canManage && !item.IsActive)
-                            {
-                                <form asp-action="Reactivate" asp-route-id="@item.ClaimId" method="post" class="d-inline"
-                                      data-ajax-form data-toast="Claim-ul a fost reactivat!" data-toast-color="green"
-                                      data-confirm="@($"Reactivati claim-ul \"{item.ClaimName}\"? Rolurile care il aveau il primesc inapoi.")">
-                                    <button type="submit" class="reactivate-link" title="Reactiveaza">
-                                        <i class="bi bi-arrow-counterclockwise"></i>
-                                    </button>
-                                </form>
-                            }
-                        </td>
-                    </tr>
+                    <tr><td colspan="3" class="table-empty">Niciun drept gasit.</td></tr>
                 }
-            }
-        </tbody>
-    </table>
-
-    <div class="pagination-container d-flex justify-content-center mb-5">
-        @Html.PagedListPager(Model, page => Url.Action("Index", "AppClaims", new { page, claimSearch = ViewBag.SelectedClaim }))
+                else
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr class="@(item.IsActive ? "" : "row-inactive")">
+                            <td class="cell-name">@item.ClaimName</td>
+                            <td>
+                                @if (item.IsActive)
+                                {
+                                    <span class="pill pill--success">Activ</span>
+                                }
+                                else
+                                {
+                                    <span class="pill pill--muted">Dezactivat</span>
+                                }
+                                @if (item.IsSystem)
+                                {
+                                    <span class="pill pill--warning"
+                                          title="Folosit de aplicatie: nu poate fi redenumit sau dezactivat">Sistem</span>
+                                }
+                            </td>
+                            <td class="cell-actions">
+                                @* Fara onclick: atributele data-* le leaga admin.js (vezi comentariul
+                                   de la inceputul fisierului), iar CSP-ul interzice scripturile inline. *@
+                                <button type="button" class="icon-btn icon-btn--view" title="Rolurile care il au"
+                                        aria-label="Detalii @item.ClaimName"
+                                        data-modal-url="@Url.Action("Details", new { id = item.ClaimId })"
+                                        data-modal="#detailsClaimModal">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                @if (canManage && !item.IsSystem)
+                                {
+                                    <button type="button" class="icon-btn icon-btn--edit" title="Redenumeste"
+                                            aria-label="Redenumeste @item.ClaimName"
+                                            data-modal-url="@Url.Action("Edit", new { id = item.ClaimId })"
+                                            data-modal="#editClaimModal">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                }
+                                @if (canManage && !item.IsSystem && item.IsActive)
+                                {
+                                    <button type="button" class="icon-btn icon-btn--danger" title="Sterge"
+                                            aria-label="Sterge @item.ClaimName"
+                                            data-modal-url="@Url.Action("Delete", new { id = item.ClaimId })"
+                                            data-modal="#deleteClaimModal">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                }
+                                @if (canManage && !item.IsActive)
+                                {
+                                    <form asp-action="Reactivate" asp-route-id="@item.ClaimId" method="post" class="d-inline"
+                                          data-ajax-form data-toast="Dreptul a fost reactivat!" data-toast-color="green"
+                                          data-confirm="@($"Reactivati dreptul \"{item.ClaimName}\"? Rolurile care il aveau il primesc inapoi.")">
+                                        <button type="submit" class="icon-btn icon-btn--restore" title="Reactiveaza"
+                                                aria-label="Reactiveaza @item.ClaimName">
+                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
     </div>
+
+    @if (Model != null && Model.PageCount > 1)
+    {
+        <div class="pager">
+            @Html.PagedListPager(Model, page => Url.Action("Index", "AppClaims", new { page, claimSearch = search }))
+        </div>
+    }
 </div>

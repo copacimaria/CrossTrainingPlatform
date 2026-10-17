@@ -1,103 +1,163 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@using System.Security.Claims
+@{
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var fullName = User.GetFullName();
+    var email = User.FindFirstValue(ClaimTypes.Email);
+
+    // Legatura paginii curente apare evidentiata in meniu.
+    var controller = ViewContext.RouteData.Values["controller"] as string ?? string.Empty;
+    string ActiveFor(params string[] controllers)
+        => controllers.Any(c => string.Equals(c, controller, StringComparison.OrdinalIgnoreCase)) ? "is-active" : string.Empty;
+
+    // Fiecare legatura de administrare apare dupa dreptul pe care il cere pagina ei, nu dupa
+    // numele rolului: un rol nou cu roles.view vede "Roluri", iar un Admin caruia i s-a scos
+    // un drept nu mai vede o legatura care l-ar duce la "acces interzis".
+    var canViewRoles = User.HasPermission(Permissions.Roles.View);
+    var canViewClaims = User.HasPermission(Permissions.Claims.View);
+    var canViewDomains = User.HasPermission(Permissions.Domains.View);
+}
+<!DOCTYPE html>
+<html lang="ro">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Cross Training Platform</title>
+    <meta name="theme-color" content="#05070f" />
+    <title>@ViewData["Title"] · CrossTraining</title>
 
-    <link rel="stylesheet" href="~/css/offlineBootstrap1-11-3.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/layout.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/games.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/bootstrap-icons-1.11.3/font/bootstrap-icons.css" asp-append-version="true" />
-    <link rel="stylesheet" type="text/css" href="~/css/toastify.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/toastify.css" asp-append-version="true" />
+    @* Ultima: tema suprascrie Bootstrap si Toastify. *@
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-glass mb-3 position-relative">
-            <div class="container-fluid d-flex justify-content-center align-items-center position-relative">
+    <div class="backdrop" aria-hidden="true">
+        <div class="backdrop__grid"></div>
+        <div class="backdrop__orb backdrop__orb--1"></div>
+        <div class="backdrop__orb backdrop__orb--2"></div>
+        <div class="backdrop__orb backdrop__orb--3"></div>
+    </div>
 
-                @if (User.Identity != null && User.Identity.IsAuthenticated)
-                {
-                    <button id="sidebarToggle" class="hamburger-btn me-3" aria-label="Toggle sidebar">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </button>
-                }
-
-                <a class="navbar-brand site-title">Cross Training Platform</a>
-
-                <a asp-area="" asp-controller="Home" asp-action="Index" class="info-btn">
-                    <i class="bi bi-info-circle-fill nav-info-icon"></i>
+    <header class="topbar">
+        <nav class="navbar navbar-expand-lg" aria-label="Navigare principala">
+            <div class="container">
+                <a class="brand" href="@(isAuthenticated ? Url.Action("DisplayGamesBasedOnDomain", "Games") : Url.Action("Index", "Home"))">
+                    <svg class="brand__mark" viewBox="0 0 40 40" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="brandGradient" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0" stop-color="#22d3ee" />
+                                <stop offset="0.5" stop-color="#818cf8" />
+                                <stop offset="1" stop-color="#c084fc" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M20 2.5 35.2 11.25v17.5L20 37.5 4.8 28.75v-17.5Z" fill="none"
+                              stroke="url(#brandGradient)" stroke-width="2.2" stroke-linejoin="round" />
+                        <path d="M13 20h14M20 13v14" stroke="url(#brandGradient)" stroke-width="2.6" stroke-linecap="round" />
+                        <circle cx="20" cy="20" r="3.2" fill="#e8ecff" />
+                    </svg>
+                    <span class="brand__name">Cross<span>Training</span></span>
                 </a>
+
+                <button class="navbar-toggler nav-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+                        aria-controls="mainNav" aria-expanded="false" aria-label="Deschide meniul">
+                    <i class="bi bi-list"></i>
+                </button>
+
+                <div class="collapse navbar-collapse" id="mainNav">
+                    <ul class="navbar-nav me-auto ms-lg-4">
+                        @if (isAuthenticated)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link-x @ActiveFor("Games")" href="@Url.Action("DisplayGamesBasedOnDomain", "Games")">
+                                    <i class="bi bi-grid-1x2-fill"></i> Catalog
+                                </a>
+                            </li>
+                        }
+                        <li class="nav-item">
+                            <a class="nav-link-x @ActiveFor("Home")" href="@Url.Action("Index", "Home")">
+                                <i class="bi bi-stars"></i> Despre
+                            </a>
+                        </li>
+
+                        @if (canViewRoles || canViewClaims || canViewDomains)
+                        {
+                            <li class="nav-item dropdown" id="adminMenu">
+                                <a class="nav-link-x dropdown-toggle @ActiveFor("AppRoles", "AppClaims", "Domain")" href="#" role="button"
+                                   data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-sliders"></i> Administrare
+                                </a>
+                                <ul class="dropdown-menu">
+                                    @if (canViewRoles)
+                                    {
+                                        <li><a class="dropdown-item" href="@Url.Action("Index", "AppRoles")"><i class="bi bi-person-badge"></i> Roluri</a></li>
+                                    }
+                                    @if (canViewClaims)
+                                    {
+                                        <li><a class="dropdown-item" href="@Url.Action("Index", "AppClaims")"><i class="bi bi-key"></i> Drepturi</a></li>
+                                    }
+                                    @if (canViewDomains)
+                                    {
+                                        <li><a class="dropdown-item" href="@Url.Action("Index", "Domain")"><i class="bi bi-diagram-3"></i> Domenii</a></li>
+                                    }
+                                </ul>
+                            </li>
+                        }
+                    </ul>
+
+                    @if (isAuthenticated)
+                    {
+                        <div class="dropdown">
+                            <button class="user-chip dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="avatar">@fullName.Initials()</span>
+                                <span class="user-chip__name">@fullName</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                @if (!string.IsNullOrEmpty(email))
+                                {
+                                    <li><span class="dropdown-header">@email</span></li>
+                                }
+                                <li><a class="dropdown-item" href="@Url.Action("Index", "Profile")"><i class="bi bi-person"></i> Profilul meu</a></li>
+                                <li><a class="dropdown-item" href="@Url.Action("ChangeDomain", "Profile")"><i class="bi bi-diagram-3"></i> Domeniile mele</a></li>
+                                <li><a class="dropdown-item" href="@Url.Action("ChangePassword", "Profile")"><i class="bi bi-shield-lock"></i> Schimba parola</a></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li>
+                                    <form asp-controller="UserAuth" asp-action="Logout" method="post">
+                                        <button type="submit" class="dropdown-item dropdown-item--danger">
+                                            <i class="bi bi-box-arrow-right"></i> Delogare
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-wrap gap-2">
+                            <a class="btn btn-glass btn-sm" href="@Url.Action("Login", "UserAuth")">Autentificare</a>
+                            <a class="btn btn-glow btn-sm" href="@Url.Action("Register", "UserAuth")">Creeaza cont</a>
+                        </div>
+                    }
+                </div>
             </div>
         </nav>
     </header>
 
-    <!-- Sidebar -->
-    <div id="sidebar" class="sidebar">
-        <button id="closeSidebar" class="close-btn">✕</button>
-        <ul>
-            <li><a href="@Url.Action("Index", "Profile")">Profile</a></li>
-            <li><a href="@Url.Action("DisplayGamesBasedOnDomain", "Games")">Games</a></li>
-
-            @* Fiecare link apare dupa dreptul pe care il cere pagina lui, nu dupa numele
-               rolului: un rol nou cu roles.view vede "App Roles", iar un Admin caruia i s-a
-               scos un drept nu mai vede un link care l-ar duce la "acces interzis". *@
-            @{
-                var canViewRoles = User.HasPermission(Permissions.Roles.View);
-                var canViewClaims = User.HasPermission(Permissions.Claims.View);
-                var canViewDomains = User.HasPermission(Permissions.Domains.View);
-            }
-            @if (canViewRoles || canViewClaims || canViewDomains)
-            {
-                <li class="has-submenu">
-                    <a href="#" id="adminToggle" class="admin-toggle">
-                        Admin Settings <span class="arrow">&#9662;</span>
-                    </a>
-                    <ul id="adminSubmenu" class="submenu">
-                        @if (canViewRoles)
-                        {
-                            <li><a href="@Url.Action("Index", "AppRoles")">App Roles</a></li>
-                        }
-                        @if (canViewClaims)
-                        {
-                            <li><a href="@Url.Action("Index", "AppClaims")">App Claims</a></li>
-                        }
-                        @if (canViewDomains)
-                        {
-                            <li><a href="@Url.Action("Index", "Domain")">Domains</a></li>
-                        }
-                    </ul>
-                </li>
-            }
-
-            @if (User.Identity != null && User.Identity.IsAuthenticated)
-            {
-                <li>
-                    <form asp-controller="UserAuth" asp-action="Logout" method="post" class="sidebar-logout-form">
-                        <button type="submit" class="sidebar-logout-btn">Logout</button>
-                    </form>
-                </li>
-            }
-        </ul>
-    </div>
-
-    <div class="container">
-        <main role="main" class="pb-3">
+    <main role="main" class="site-main">
+        <div class="container">
             @RenderBody()
-        </main>
-    </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container d-flex flex-wrap justify-content-between gap-2">
+            <span>© @DateTime.UtcNow.Year CrossTraining · aplicatii educationale pentru fiecare domeniu</span>
+            <a href="@Url.Action("Index", "Home")">Despre platforma</a>
+        </div>
+    </footer>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script type="text/javascript" src="~/js/taostify.js"></script>
+    <script src="~/js/taostify.js" asp-append-version="true"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    <script src="~/js/layout.js" asp-append-version="true"></script>
     @* Modale, formulare AJAX si mesaje pentru toate ecranele de administrare. *@
     <script src="~/js/admin.js" asp-append-version="true"></script>
 

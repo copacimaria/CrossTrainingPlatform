@@ -4,7 +4,8 @@
 <form asp-action="Create" method="post" data-ajax-form data-toast="Domeniul a fost creat!" data-toast-color="grey">
     <partial name="_DomainFields" model="Model" />
 
-    <div class="d-flex justify-content-center">
-        <button type="submit" class="btn btn-success">Adauga</button>
+    <div class="form-actions">
+        <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Renunta</button>
+        <button type="submit" class="btn btn-glow"><i class="bi bi-plus-lg"></i> Adauga</button>
     </div>
 </form>

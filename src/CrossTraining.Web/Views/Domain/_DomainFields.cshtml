@@ -1,20 +1,14 @@
 @model DomainFormModel
 
 @* Campurile comune formularelor de creare si de editare. *@
-<div class="row justify-content-center">
-    <div class="col-sm-8">
-        <div class="alert alert-danger py-2" data-form-errors role="alert" hidden></div>
+<div class="notice notice--danger" data-form-errors role="alert" hidden></div>
 
-        <div class="modal-form-group mb-3">
-            <label asp-for="DomainName" class="control-label fw-bold admin-form-label">Nume domeniu:</label>
-            <input asp-for="DomainName" class="form-control" required />
-        </div>
+<div class="field">
+    <label asp-for="DomainName" class="field-label">Numele domeniului</label>
+    <input asp-for="DomainName" class="input" placeholder="de exemplu: Medicina" required />
+</div>
 
-        <div class="form-check mb-3">
-            <input asp-for="IsActive" class="form-check-input" />
-            <label asp-for="IsActive" class="form-check-label admin-form-label">Activ (poate fi ales la inregistrare)</label>
-        </div>
-
-        <br />
-    </div>
+<div class="form-check">
+    <input asp-for="IsActive" class="form-check-input" />
+    <label asp-for="IsActive" class="form-check-label">Activ (poate fi ales la inregistrare)</label>
 </div>

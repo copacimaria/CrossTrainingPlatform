@@ -11,7 +11,7 @@ public sealed record LoginUserQuery(string Email, string Password) : IQuery<Auth
 public sealed class LoginUserHandler : IQueryHandler<LoginUserQuery, AuthResult>
 {
     /// <summary>Acelasi mesaj pentru orice esec: altfel s-ar putea afla care adrese au cont.</summary>
-    private const string InvalidCredentials = "Invalid email or password!";
+    private const string InvalidCredentials = "Email sau parola incorecta.";
 
     private readonly IAppUserRepository _users;
     private readonly IAppRoleRepository _roles;

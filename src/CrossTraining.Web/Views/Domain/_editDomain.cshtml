@@ -1,10 +1,11 @@
 @model DomainFormModel
 
 <form asp-action="Edit" asp-route-id="@Model.DomainId" method="post"
-      data-ajax-form data-toast="Domeniul a fost editat!" data-toast-color="green">
+      data-ajax-form data-toast="Domeniul a fost actualizat!" data-toast-color="green">
     <partial name="_DomainFields" model="Model" />
 
-    <div class="d-flex justify-content-center">
-        <button type="submit" class="btn btn-success">Salveaza</button>
+    <div class="form-actions">
+        <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Renunta</button>
+        <button type="submit" class="btn btn-glow"><i class="bi bi-check2"></i> Salveaza</button>
     </div>
 </form>

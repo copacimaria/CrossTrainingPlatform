@@ -1,22 +1,18 @@
 @model GameDto
 
-<div class="delete-modal-container">
-    <h3 class="delete-title">Confirmare stergere</h3>
+<div class="confirm">
+    <div class="confirm__icon"><i class="bi bi-trash3"></i></div>
+    <h3>Stergi aplicatia din catalog?</h3>
+    <p>Aplicatia nu va mai aparea in catalog pentru niciun utilizator.</p>
+    <span class="confirm__subject">@Model.GameName</span>
 
-    <p class="delete-warning">Esti sigur ca vrei sa stergi acest joc?</p>
-
-    <div class="delete-summary">
-        <p><strong>Nume joc:</strong> @Model.GameName</p>
-    </div>
-
-    <br />
-
-    <form asp-action="PostDelete" method="post" data-ajax-form data-toast="The game was removed!" data-toast-color="red">
+    <form asp-action="PostDelete" method="post" data-ajax-form data-toast="Aplicatia a fost stearsa!" data-toast-color="red">
         <input type="hidden" name="gameId" value="@Model.GameId" />
-        <div class="alert alert-danger py-2" data-form-errors role="alert" hidden></div>
+        <div class="notice notice--danger" data-form-errors role="alert" hidden></div>
 
-        <div class="d-flex justify-content-center">
-            <button type="submit" class="btn btn-danger">Confirma stergerea</button>
+        <div class="form-actions">
+            <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Renunta</button>
+            <button type="submit" class="btn btn-danger-glow"><i class="bi bi-trash3"></i> Sterge</button>
         </div>
     </form>
 </div>

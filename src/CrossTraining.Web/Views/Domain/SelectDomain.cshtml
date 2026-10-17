@@ -1,40 +1,40 @@
 @model SelectDomainViewModel
 @{
-    ViewData["Title"] = "Select Domains";
+    ViewData["Title"] = "Alege domeniile";
 }
 
-<div class="page-wrapper">
-    <div class="domain-container">
-        <h2>Select Domains</h2>
-        <p>Poti alege unul sau mai multe domenii.</p>
+<section class="auth">
+    <div class="auth__grid auth__grid--single">
+        <div class="panel panel--glow panel__body auth-card">
+            <span class="eyebrow auth-card__icon"><i class="bi bi-diagram-3-fill"></i> Pasul 2 din 2</span>
+            <h2>Ce vrei sa inveti?</h2>
+            <p class="auth-card__sub">
+                Alege unul sau mai multe domenii. Catalogul iti va recomanda aplicatiile potrivite,
+                iar alegerea se poate schimba oricand din profil.
+            </p>
 
-        @if (!ViewData.ModelState.IsValid)
-        {
-            <div class="form-errors">
-                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-                {
-                    <div>@error.ErrorMessage</div>
-                }
-            </div>
-        }
+            <partial name="_FormErrors" />
 
-        <form asp-controller="Domain" asp-action="SaveUserDomain" method="post">
-            @* Token semnat, emis la register. Inlocuieste vechiul userId trimis in clar. *@
-            <input type="hidden" asp-for="Token" />
+            <form asp-controller="Domain" asp-action="SaveUserDomain" method="post">
+                @* Token semnat, emis la register. Inlocuieste vechiul userId trimis in clar. *@
+                <input type="hidden" asp-for="Token" />
 
-            <div class="form-group">
-                <div class="domain-checkbox-list">
+                <div class="choice-grid">
                     @foreach (var domain in Model.Domains)
                     {
-                        <label class="domain-checkbox-item">
-                            <input type="checkbox" name="domainIds" value="@domain.DomainId" />
-                            <span>@domain.DomainName</span>
+                        <label class="choice">
+                            <input type="checkbox" class="choice__input" name="domainIds" value="@domain.DomainId" />
+                            <span class="choice__body">@domain.DomainName</span>
                         </label>
                     }
                 </div>
-            </div>
 
-            <button type="submit" class="submit-btn">Submit</button>
-        </form>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-glow btn-lg">
+                        Finalizeaza inregistrarea <i class="bi bi-check2-circle"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
+</section>

@@ -3,16 +3,20 @@
     var returnUrl = ViewBag.ReturnUrl as string;
 }
 
-<div class="page-wrapper">
-    <div class="domain-container">
-        <h2>Acces interzis</h2>
-        <p>Contul tau nu are dreptul necesar pentru pagina ceruta.</p>
+<section class="status-page">
+    <div class="icon-tile"><i class="bi bi-shield-lock-fill"></i></div>
+    <span class="status-page__code">403</span>
+    <h1 class="h3 mt-3">Acces interzis</h1>
+    <p class="text-soft">Contul tau nu are dreptul necesar pentru pagina ceruta.</p>
 
-        @if (!string.IsNullOrEmpty(returnUrl))
-        {
-            <p class="text-muted">Pagina: <code>@returnUrl</code></p>
-        }
+    @if (!string.IsNullOrEmpty(returnUrl))
+    {
+        <p class="text-soft">Pagina: <code>@returnUrl</code></p>
+    }
 
-        <a class="submit-btn" href="@Url.Action("DisplayGamesBasedOnDomain", "Games")">Inapoi la jocuri</a>
+    <div class="hero__actions justify-content-center">
+        <a class="btn btn-glow" href="@Url.Action("DisplayGamesBasedOnDomain", "Games")">
+            <i class="bi bi-grid-1x2-fill"></i> Inapoi la catalog
+        </a>
     </div>
-</div>
+</section>

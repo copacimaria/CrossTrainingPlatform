@@ -1,37 +1,28 @@
 @model RoleClaimsViewModel
 
-<form asp-action="AddClaim" method="post" data-ajax-form data-toast="Dreptul a fost adaugat!" data-toast-color="green">
-    <div class="row justify-content-center">
-        <div class="col-sm-8">
-            <div class="alert alert-danger py-2" data-form-errors role="alert" hidden></div>
+<form asp-action="AddClaim" method="post" data-ajax-form data-toast="Dreptul a fost adaugat in rol!" data-toast-color="green">
+    <div class="notice notice--danger" data-form-errors role="alert" hidden></div>
 
-            @* Lista de claim-uri disponibile nu mai este trimisa in pagina si nici inapoi la
-               server: autocomplete-ul (approles-details.js) o cere pe bucati, filtrata in baza
-               de date. *@
-            <input type="hidden" name="roleId" value="@Model.Role.RoleId" />
+    @* Lista de drepturi disponibile nu mai este trimisa in pagina si nici inapoi la server:
+       autocomplete-ul (approles-details.js) o cere pe bucati, filtrata in baza de date. *@
+    <input type="hidden" name="roleId" value="@Model.Role.RoleId" />
 
-            <div class="container mb-4 addclaim-role-line">
-                <div class="row align-items-center">
-                    <div class="col-auto"><label class="fw-bold">Rolul:</label></div>
-                    <div class="col"><span>@Model.Role.RoleName</span></div>
-                </div>
-            </div>
+    <p class="text-soft">Rolul: <span class="tag"><i class="bi bi-person-badge"></i> @Model.Role.RoleName</span></p>
 
-            <div class="container mb-4">
-                <label for="claimSearch" class="form-label fw-bold">Cauta drept:</label>
-                <input type="text" id="claimSearch" class="form-control mb-2" placeholder="Cauta dupa nume"
-                       autocomplete="off" required
-                       data-claim-autocomplete="@Url.Action("SearchAvailableClaims", new { roleId = Model.Role.RoleId })" />
-                <ul id="searchResults" class="dropdown-menu w-100 addclaim-results"></ul>
-            </div>
-
-            <input type="hidden" id="selectedClaimId" name="claimId" />
-
-            <br />
-
-            <div class="d-flex justify-content-center">
-                <button type="submit" class="btn btn-success">Salveaza</button>
-            </div>
+    <div class="field">
+        <label for="claimSearch" class="field-label">Cauta dreptul</label>
+        <div class="input-icon">
+            <i class="bi bi-search"></i>
+            <input type="text" id="claimSearch" class="input" placeholder="Incepe sa scrii numele" autocomplete="off" required
+                   data-claim-autocomplete="@Url.Action("SearchAvailableClaims", new { roleId = Model.Role.RoleId })" />
         </div>
+        <ul id="searchResults" class="dropdown-menu w-100 addclaim-results"></ul>
+    </div>
+
+    <input type="hidden" id="selectedClaimId" name="claimId" />
+
+    <div class="form-actions">
+        <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Renunta</button>
+        <button type="submit" class="btn btn-glow"><i class="bi bi-plus-lg"></i> Adauga</button>
     </div>
 </form>

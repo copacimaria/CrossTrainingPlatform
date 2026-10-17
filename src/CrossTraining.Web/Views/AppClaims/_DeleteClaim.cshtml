@@ -1,20 +1,18 @@
 @model ClaimWithRolesDto
 
-<h1 class="delete-heading">Sunteti sigur ca vreti sa stergeti acest claim?</h1>
-<hr />
+<div class="confirm">
+    <div class="confirm__icon"><i class="bi bi-trash3"></i></div>
+    <h3>Stergi acest drept?</h3>
+    <p>Dreptul se dezactiveaza: rolurile care il au il pierd, pana la o eventuala reactivare.</p>
+    <span class="confirm__subject">@Model.ClaimName</span>
 
-<dl class="row admin-detail-list">
-    <dt class="col-sm-6">Numele claim-ului:</dt>
-    <dd class="col-sm-6">@Model.ClaimName</dd>
-</dl>
+    <form asp-action="DeleteConfirmed" asp-route-id="@Model.ClaimId" method="post"
+          data-ajax-form data-toast="Dreptul a fost sters!" data-toast-color="red">
+        <div class="notice notice--danger" data-form-errors role="alert" hidden></div>
 
-<br />
-
-<form asp-action="DeleteConfirmed" asp-route-id="@Model.ClaimId" method="post"
-      data-ajax-form data-toast="Claim-ul a fost sters!" data-toast-color="red">
-    <div class="alert alert-danger py-2" data-form-errors role="alert" hidden></div>
-
-    <div class="d-flex justify-content-center">
-        <button type="submit" class="btn btn-danger">Confirma stergerea</button>
-    </div>
-</form>
+        <div class="form-actions">
+            <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Renunta</button>
+            <button type="submit" class="btn btn-danger-glow"><i class="bi bi-trash3"></i> Sterge</button>
+        </div>
+    </form>
+</div>

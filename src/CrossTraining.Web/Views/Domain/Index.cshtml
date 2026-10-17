@@ -7,102 +7,116 @@
     var canManage = User.HasPermission(Permissions.Domains.Manage);
 }
 
-<br /><br />
-
 <!-- Modale -->
-<div class="modal fade" id="createDomainModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog admin-modal-dialog">
+<div class="modal fade" id="createDomainModal" tabindex="-1" aria-labelledby="createDomainTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Creare domeniu:</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="createDomainTitle"><i class="bi bi-plus-circle"></i> Domeniu nou</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Inchide"></button>
             </div>
             <div class="modal-body"></div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="editDomainModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog admin-modal-dialog">
+<div class="modal fade" id="editDomainModal" tabindex="-1" aria-labelledby="editDomainTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Editeaza domeniul:</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="editDomainTitle"><i class="bi bi-pencil-square"></i> Editeaza domeniul</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Inchide"></button>
             </div>
             <div class="modal-body"></div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="deleteDomainModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog admin-modal-dialog">
+<div class="modal fade" id="deleteDomainModal" tabindex="-1" aria-labelledby="deleteDomainTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Confirmare stergere domeniu</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="deleteDomainTitle"><i class="bi bi-trash3"></i> Stergere domeniu</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Inchide"></button>
             </div>
             <div class="modal-body"></div>
         </div>
     </div>
 </div>
 
-<div class="d-flex justify-content-between align-items-center admin-header">
-    <h1 class="mb-0">Domenii</h1>
+<partial name="_AdminTabs" />
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow"><i class="bi bi-diagram-3-fill"></i> Administrare</span>
+        <h1>Domenii</h1>
+        <p>
+            Domeniile grupeaza aplicatiile din catalog. Utilizatorii le aleg la inregistrare, iar
+            catalogul le recomanda aplicatiile din domeniile alese.
+        </p>
+    </div>
     @if (canManage)
     {
-        <button type="button" data-modal-url="@Url.Action("Create")" data-modal="#createDomainModal"
-                class="btn btn-dark fw-bold">
-            <i class="bi bi-plus-circle me-2"></i> Creeaza un domeniu nou
+        <button type="button" class="btn btn-glow" data-modal-url="@Url.Action("Create")" data-modal="#createDomainModal">
+            <i class="bi bi-plus-lg"></i> Domeniu nou
         </button>
     }
 </div>
 
-<div class="col">
-    <table class="table table-hover">
-        <thead>
-            <tr>
-                <th class="fw-bold">Nume domeniu</th>
-                <th class="fw-bold">Stare</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
-                <tr class="@(item.IsActive ? "" : "admin-row-inactive")">
-                    <td>@item.DomainName</td>
-                    <td>
-                        @if (item.IsActive)
-                        {
-                            <span class="badge bg-success">Activ</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-secondary">Dezactivat</span>
-                        }
-                    </td>
-                    <td>
-                        @* Atributele data-* le leaga admin.js (vezi AppClaims/Index). Un domeniu
-                           dezactivat se reactiveaza din editare (casuta "Activ"). *@
-                        @if (canManage)
-                        {
-                            <button type="button" class="edit-link" title="Editeaza"
-                                    data-modal-url="@Url.Action("Edit", new { id = item.DomainId })"
-                                    data-modal="#editDomainModal">
-                                <i class="bi bi-pencil-square"></i>
-                            </button>
-                        }
-                        @if (canManage && item.IsActive)
-                        {
-                            <button type="button" class="delete-link" title="Sterge"
-                                    data-modal-url="@Url.Action("Delete", new { id = item.DomainId })"
-                                    data-modal="#deleteDomainModal">
-                                <i class="bi bi-trash3"></i>
-                            </button>
-                        }
-                    </td>
+<div class="panel">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nume</th>
+                    <th>Stare</th>
+                    <th class="text-end">Actiuni</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @if (Model.Count == 0)
+                {
+                    <tr><td colspan="3" class="table-empty">Inca nu exista niciun domeniu.</td></tr>
+                }
+                @foreach (var item in Model)
+                {
+                    <tr class="@(item.IsActive ? "" : "row-inactive")">
+                        <td class="cell-name">@item.DomainName</td>
+                        <td>
+                            @if (item.IsActive)
+                            {
+                                <span class="pill pill--success">Activ</span>
+                            }
+                            else
+                            {
+                                <span class="pill pill--muted">Dezactivat</span>
+                            }
+                        </td>
+                        <td class="cell-actions">
+                            @* Atributele data-* le leaga admin.js (vezi AppClaims/Index). Un domeniu
+                               dezactivat se reactiveaza din editare (casuta "Activ"). *@
+                            @if (canManage)
+                            {
+                                <button type="button" class="icon-btn icon-btn--edit" title="Editeaza"
+                                        aria-label="Editeaza @item.DomainName"
+                                        data-modal-url="@Url.Action("Edit", new { id = item.DomainId })"
+                                        data-modal="#editDomainModal">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                            }
+                            @if (canManage && item.IsActive)
+                            {
+                                <button type="button" class="icon-btn icon-btn--danger" title="Sterge"
+                                        aria-label="Sterge @item.DomainName"
+                                        data-modal-url="@Url.Action("Delete", new { id = item.DomainId })"
+                                        data-modal="#deleteDomainModal">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>

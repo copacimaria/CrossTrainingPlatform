@@ -1,0 +1,17 @@
+@* Erorile care nu tin de un camp anume (de exemplu "email sau parola gresite").
+   Cele ale unui camp apar langa el, prin asp-validation-for. *@
+@{
+    var errors = ViewData.ModelState.TryGetValue(string.Empty, out var entry) ? entry.Errors : null;
+}
+@if (errors is { Count: > 0 })
+{
+    <div class="notice notice--danger" role="alert">
+        <i class="bi bi-exclamation-octagon-fill"></i>
+        <ul class="list-unstyled">
+            @foreach (var error in errors)
+            {
+                <li>@error.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}

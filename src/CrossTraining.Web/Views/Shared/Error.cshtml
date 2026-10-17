@@ -1,23 +1,23 @@
 ﻿@model CrossTraining.Web.Models.ErrorViewModel
 @{
-    ViewData["Title"] = "Error";
+    ViewData["Title"] = "Eroare";
 }
 
-<h1 class="text-danger">Error.</h1>
-<h2 class="text-danger">An error occurred while processing your request.</h2>
-
-@if (Model.ShowRequestId)
-{
-    <p>
-        <strong>Request ID:</strong> <code>@Model.RequestId</code>
+<section class="status-page status-page--danger">
+    <div class="icon-tile"><i class="bi bi-exclamation-triangle-fill"></i></div>
+    <span class="status-page__code">500</span>
+    <h1 class="h3 mt-3">Ceva nu a mers bine</h1>
+    <p class="text-soft">
+        Cererea ta nu a putut fi procesata. Incearca din nou peste cateva momente; daca problema
+        persista, trimite codul de mai jos echipei de suport.
     </p>
-}
 
-<h3>Development Mode</h3>
-<p>
-    Swapping to <strong>Development</strong> environment will display more detailed information about the error that occurred.
-</p>
-<p>
-    <strong>The Development environment shouldn't be enabled for deployed applications.</strong>
-    It can result in displaying sensitive information from exceptions to end users.
-</p>
+    @if (Model.ShowRequestId)
+    {
+        <p class="confirm__subject">Codul cererii (Request ID): @Model.RequestId</p>
+    }
+
+    <div class="hero__actions justify-content-center">
+        <a class="btn btn-glass" href="@Url.Action("Index", "Home")"><i class="bi bi-house"></i> Pagina principala</a>
+    </div>
+</section>

@@ -1,21 +1,16 @@
 @model ClaimFormModel
 
 <form asp-action="Edit" asp-route-id="@Model.ClaimId" method="post"
-      data-ajax-form data-toast="Claim-ul a fost editat!" data-toast-color="green">
-    <div class="row justify-content-center">
-        <div class="col-sm-8">
-            <div class="alert alert-danger py-2" data-form-errors role="alert" hidden></div>
+      data-ajax-form data-toast="Dreptul a fost redenumit!" data-toast-color="green">
+    <div class="notice notice--danger" data-form-errors role="alert" hidden></div>
 
-            <div class="modal-form-group mb-3">
-                <label asp-for="ClaimName" class="control-label">Numele claim-ului:</label>
-                <input asp-for="ClaimName" class="form-control" required />
-            </div>
+    <div class="field">
+        <label asp-for="ClaimName" class="field-label">Numele dreptului</label>
+        <input asp-for="ClaimName" class="input" required />
+    </div>
 
-            <br />
-
-            <div class="d-flex justify-content-center">
-                <button type="submit" class="btn btn-success">Salveaza</button>
-            </div>
-        </div>
+    <div class="form-actions">
+        <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Renunta</button>
+        <button type="submit" class="btn btn-glow"><i class="bi bi-check2"></i> Salveaza</button>
     </div>
 </form>

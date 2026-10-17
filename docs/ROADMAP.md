@@ -434,13 +434,44 @@ Vezi [ADR-0012](adr/0012-raspunsuri-ajax-si-comportament-declarativ.md).
 - Refuzurile apar ca `400` in tab-ul Network al browserului.
 - Ecranele de domenii sunt modale; stergerea se trimite la `POST /Domain/DeleteConfirmed/{id}`.
 
+## Etapa 10 - Redesign: o platforma de aplicatii educationale ✅
+
+- [x] **O singura foaie de stil** (`app.css`) in locul a sase (`site.css`, `layout.css`,
+      `auth.css`, `games.css`, `admin.css` si o copie a iconitelor Bootstrap, incarcata de
+      doua ori). Tema intunecata: aurora si grila in fundal, panouri de sticla, degrade
+      cyan-violet, animatii oprite pentru `prefers-reduced-motion`.
+- [x] **Navigare noua**: bara de sus cu Catalog, Despre, meniul Administrare (dupa drepturi)
+      si meniul contului (profil, domenii, parola, delogare). Pe telefon, un panou.
+      Bara laterala si `layout.js` au fost scoase.
+- [x] **Catalogul ca un magazin de aplicatii**: carduri cu iconita si culoare proprie,
+      domeniu, descriere, eticheta „Recomandat”, cautare instantanee (si tasta `/`), filtre
+      pe domeniu si „doar recomandate”. Recomandatele apar primele.
+- [x] **Pagina de prezentare** (Despre): hero cu hologram animat, avantaje, pasii de
+      inceput, indemn la inregistrare.
+- [x] **Contul**: autentificare si inregistrare pe doua coloane, alegerea domeniilor ca
+      dale selectabile, profil cu avatar si actiuni.
+- [x] **Administrarea**: file intre Roluri / Drepturi / Domenii, tabele cu stare, confirmari
+      de stergere cu iconita, modale cu „Renunta” / actiune.
+- [x] **Interfata in romana**, inclusiv mesajele de validare (cele implicite erau in
+      engleza) si mesajul de autentificare esuata.
+
+### Verificat, nu presupus
+
+- Toate paginile parcurse in browser, pe baza de test, la latime de desktop si de telefon
+  (375 px): fara derulare orizontala, fara incalcari de CSP in consola.
+- Reparat pe parcurs: inelul rotit al hologramei latea pagina; filtrele de domeniu ocupau
+  mai multe randuri (acum un rand derulabil); mesajele toast se intindeau pe toata latimea.
+- Testele existente trec neschimbate, cu o exceptie: meniul de administrare se cauta dupa
+  `id="adminMenu"`, nu dupa textul vechi „Admin Settings”. Teste noi pentru initiale si
+  culori (`DisplayExtensionsTests`).
+
 ---
 
 ## Datorie tehnica fara etapa alocata
 
-- [ ] **Cod bilingv.** Comentariile sunt in romana, mesajele catre utilizator sunt
-      amestecate ("Invalid email or password!" langa "Parola veche este incorecta!").
-      De ales o limba pentru cod si de trecut mesajele de UI prin `IStringLocalizer`.
+- [ ] **Localizare.** Interfata si mesajele sunt acum toate in romana (etapa 10), dar
+      scrise direct in cod si in view-uri. Pentru o a doua limba, de trecut prin
+      `IStringLocalizer`.
 - [x] ~~**Domeniu anemic.**~~ Rezolvat in etapa 8.
 - [x] ~~**Front-end**: cod JS copiat intre fisiere.~~ Rezolvat in etapa 9 (`admin.js`).
       Ramane: fara bundling si fara minificare (cache busting-ul exista, prin

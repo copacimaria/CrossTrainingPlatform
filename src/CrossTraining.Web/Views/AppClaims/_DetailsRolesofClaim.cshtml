@@ -1,23 +1,27 @@
 @model ClaimWithRolesDto
 
-<dl class="row admin-detail-list">
-    <dt>Claim-ul:</dt>
-    <dd>@Model.ClaimName</dd>
+<dl class="kv">
+    <div>
+        <dt>Dreptul</dt>
+        <dd><span class="confirm__subject mb-0">@Model.ClaimName</span></dd>
+    </div>
 
-    <dt>Rolurile asociate acestui claim:</dt>
-    <dd>
-        @if (Model.RoleNames.Count > 0)
-        {
-            <ul class="admin-role-list">
-                @foreach (var roleName in Model.RoleNames)
-                {
-                    <li>@roleName</li>
-                }
-            </ul>
-        }
-        else
-        {
-            <span>Niciun rol asociat.</span>
-        }
-    </dd>
+    <div>
+        <dt>Rolurile care il au</dt>
+        <dd class="mt-2">
+            @if (Model.RoleNames.Count > 0)
+            {
+                <div class="chips">
+                    @foreach (var roleName in Model.RoleNames)
+                    {
+                        <span class="tag"><i class="bi bi-person-badge"></i> @roleName</span>
+                    }
+                </div>
+            }
+            else
+            {
+                <span class="text-soft">Niciun rol nu are acest drept.</span>
+            }
+        </dd>
+    </div>
 </dl>

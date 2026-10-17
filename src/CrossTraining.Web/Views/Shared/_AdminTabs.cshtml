@@ -1,0 +1,21 @@
+@* Navigarea intre ecranele de administrare. Fiecare fila apare dupa dreptul pe care il
+   cere pagina ei, la fel ca meniul "Administrare" din layout. *@
+@{
+    var controller = ViewContext.RouteData.Values["controller"] as string ?? string.Empty;
+    string ActiveFor(string name)
+        => string.Equals(name, controller, StringComparison.OrdinalIgnoreCase) ? "is-active" : string.Empty;
+}
+<nav class="admin-tabs" aria-label="Ecrane de administrare">
+    @if (User.HasPermission(Permissions.Roles.View))
+    {
+        <a class="@ActiveFor("AppRoles")" href="@Url.Action("Index", "AppRoles")"><i class="bi bi-person-badge"></i> Roluri</a>
+    }
+    @if (User.HasPermission(Permissions.Claims.View))
+    {
+        <a class="@ActiveFor("AppClaims")" href="@Url.Action("Index", "AppClaims")"><i class="bi bi-key"></i> Drepturi</a>
+    }
+    @if (User.HasPermission(Permissions.Domains.View))
+    {
+        <a class="@ActiveFor("Domain")" href="@Url.Action("Index", "Domain")"><i class="bi bi-diagram-3"></i> Domenii</a>
+    }
+</nav>

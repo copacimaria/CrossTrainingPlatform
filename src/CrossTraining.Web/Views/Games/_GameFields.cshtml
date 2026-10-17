@@ -1,0 +1,40 @@
+@model GameFormModel
+@{
+    // Domeniul e obligatoriu la creare; la editare, un joc vechi fara domeniu poate fi
+    // salvat si asa, ca inainte.
+    var isNew = Model.GameId == 0;
+}
+
+@* Campurile comune formularelor de creare si de editare a unei aplicatii. *@
+<div class="notice notice--danger" data-form-errors role="alert" hidden></div>
+
+<div class="row g-3">
+    <div class="col-md-7">
+        <div class="field mb-0">
+            <label asp-for="GameName" class="field-label">Nume</label>
+            <input asp-for="GameName" class="input" placeholder="Numele aplicatiei" required />
+        </div>
+    </div>
+    <div class="col-md-5">
+        <div class="field mb-0">
+            <label asp-for="DomainId" class="field-label">Domeniu</label>
+            <select asp-for="DomainId" class="input" asp-items="ViewBag.Domains" required="@isNew">
+                <option value="">Alege domeniul</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="field mt-3">
+    <label asp-for="Description" class="field-label">Descriere</label>
+    <textarea asp-for="Description" class="input" maxlength="300" rows="3" required data-autosize
+              placeholder="Ce invata utilizatorul cu aceasta aplicatie?"></textarea>
+</div>
+
+<div class="field">
+    <label asp-for="DownloadLink" class="field-label">Link de descarcare</label>
+    <div class="input-icon">
+        <i class="bi bi-link-45deg"></i>
+        <input asp-for="DownloadLink" class="input" placeholder="https://..." />
+    </div>
+</div>

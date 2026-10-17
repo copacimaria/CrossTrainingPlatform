@@ -1,34 +1,11 @@
 @model GameFormModel
 
 <form asp-action="Edit" asp-route-id="@Model.GameId" method="post"
-      data-ajax-form data-toast="The game was edited!" data-toast-color="green">
-    <div class="alert alert-danger py-2" data-form-errors role="alert" hidden></div>
+      data-ajax-form data-toast="Aplicatia a fost actualizata!" data-toast-color="green">
+    <partial name="_GameFields" model="Model" />
 
-    <div class="modal-form-group mb-3">
-        <label asp-for="GameName" class="control-label fw-bold">Nume joc:</label>
-        <input asp-for="GameName" class="form-control custom-input" required />
-    </div>
-
-    <div class="modal-form-group mb-3">
-        <label asp-for="DomainId" class="control-label fw-bold game-form-label">Domain:</label>
-        <select asp-for="DomainId" class="form-control" asp-items="ViewBag.Domains">
-            <option value="">-- Selecteaza domeniul --</option>
-        </select>
-    </div>
-
-    <div class="modal-form-group">
-        <label asp-for="Description">Descriere:</label>
-        <textarea asp-for="Description" maxlength="300" rows="3" required data-autosize></textarea>
-    </div>
-
-    <div class="modal-form-group mb-3">
-        <label asp-for="DownloadLink" class="control-label fw-bold">Link download:</label>
-        <input asp-for="DownloadLink" class="form-control custom-input" />
-    </div>
-
-    <br />
-
-    <div class="d-flex justify-content-center">
-        <button type="submit" class="btn btn-success">Salveaza</button>
+    <div class="form-actions">
+        <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Renunta</button>
+        <button type="submit" class="btn btn-glow"><i class="bi bi-check2"></i> Salveaza</button>
     </div>
 </form>

@@ -1,127 +1,200 @@
 @model GamesForUserDto
 @{
-    ViewData["Title"] = "Games";
+    ViewData["Title"] = "Catalog";
+    var canManage = User.HasPermission(Permissions.Games.Manage);
+
+    // Aplicatiile recomandate (din domeniile utilizatorului) apar primele.
+    var recommendedIds = Model.GamesForSelectedDomains.Select(g => g.GameId).ToHashSet();
+    var games = Model.AllGames
+        .Where(g => g.IsActive)
+        .OrderByDescending(g => recommendedIds.Contains(g.GameId))
+        .ThenBy(g => g.GameName, StringComparer.CurrentCultureIgnoreCase)
+        .ToList();
+    var domains = games
+        .Select(g => g.DomainName)
+        .OfType<string>()
+        .Distinct()
+        .Order(StringComparer.CurrentCultureIgnoreCase)
+        .ToList();
+    var recommendedCount = games.Count(g => recommendedIds.Contains(g.GameId));
 }
 
 <!-- Modale -->
-<div class="modal fade" id="createGameModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog game-modal-dialog">
+<div class="modal fade" id="createGameModal" tabindex="-1" aria-labelledby="createGameTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Creare joc:</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="createGameTitle"><i class="bi bi-plus-circle"></i> Aplicatie noua</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Inchide"></button>
             </div>
-            <div class="modal-body" id="contentAddGame"></div>
+            <div class="modal-body"></div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="editGameModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog game-modal-dialog">
+<div class="modal fade" id="editGameModal" tabindex="-1" aria-labelledby="editGameTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Editeaza joc:</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="editGameTitle"><i class="bi bi-pencil-square"></i> Editeaza aplicatia</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Inchide"></button>
             </div>
-            <div class="modal-body" id="contentEditGame"></div>
+            <div class="modal-body"></div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="deleteGameModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog game-modal-dialog">
+<div class="modal fade" id="deleteGameModal" tabindex="-1" aria-labelledby="deleteGameTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="deleteGameTitle"><i class="bi bi-trash3"></i> Stergere aplicatie</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Inchide"></button>
             </div>
-            <div class="modal-body" id="contentDeleteGame"></div>
+            <div class="modal-body"></div>
         </div>
     </div>
 </div>
 
-<h2 class="games-title">Available Games</h2>
+<section class="catalog-head">
+    <div>
+        <span class="eyebrow"><i class="bi bi-collection-play-fill"></i> Biblioteca de aplicatii</span>
+        <h1 class="display">Aplicatii educationale <span class="text-gradient">pentru tine</span></h1>
+        <p class="lead-x mb-0">
+            Jocuri si simulari interactive, ordonate dupa domeniile pe care le-ai ales.
+            Cele recomandate pentru tine apar primele.
+        </p>
+    </div>
 
-<div class="games-grid">
+    <div class="catalog-stats">
+        <div class="panel catalog-stat">
+            <span class="stat__value">@games.Count</span>
+            <span class="stat__label">aplicatii</span>
+        </div>
+        <div class="panel catalog-stat">
+            <span class="stat__value">@recommendedCount</span>
+            <span class="stat__label">recomandate</span>
+        </div>
+        <div class="panel catalog-stat">
+            <span class="stat__value">@domains.Count</span>
+            <span class="stat__label">domenii</span>
+        </div>
+    </div>
+</section>
 
-    @foreach (var game in Model.AllGames.Where(g => g.IsActive))
-    {
-        bool isInSelected = Model.GamesForSelectedDomains.Any(g => g.GameId == game.GameId);
+@if (games.Count > 0)
+{
+    <div class="catalog-tools">
+        <div class="input-icon">
+            <i class="bi bi-search"></i>
+            <input type="search" class="input" placeholder="Cauta dupa nume, domeniu sau descriere"
+                   aria-label="Cauta in catalog" autocomplete="off" data-catalog-search />
+            <span class="kbd" aria-hidden="true">/</span>
+        </div>
 
-        <div class="game-card flip-card" data-expanded="false">
-            <div class="flip-card-inner">
-                <!-- FRONT -->
-                <div class="flip-card-front">
-                    @if (User.HasPermission(Permissions.Games.Manage))
-                    {
-                        @* Atributele data-* le leaga admin.js; games.js nu intoarce cardul la
-                           click pe ele. *@
-                        <div class="card-actions">
-                            <button type="button" class="edit-link" title="Editeaza"
-                                    data-modal-url="@Url.Action("Edit", new { id = game.GameId })"
-                                    data-modal="#editGameModal">
-                                <i class="bi bi-pencil-square"></i>
-                            </button>
-                            <button type="button" class="delete-link" title="Sterge"
-                                    data-modal-url="@Url.Action("Delete", new { id = game.GameId })"
-                                    data-modal="#deleteGameModal">
-                                <i class="bi bi-trash3"></i>
-                            </button>
-                        </div>
-                    }
-
-                    @if (!string.IsNullOrEmpty(game.DownloadLink))
-                    {
-                        <a href="@game.DownloadLink" target="_blank" class="download-btn">
-                            <i class="bi bi-download"></i>
-                        </a>
-                    }
-
-                    <div class="game-name">@game.GameName</div>
-
-                    <div class="game-body">
-                        @if (!string.IsNullOrEmpty(game.DomainName))
-                        {
-                            <p><strong>Domain:</strong> @game.DomainName</p>
-                        }
-                        else
-                        {
-                            <p><strong>Domain:</strong> Not assigned</p>
-                        }
-                    </div>
-                </div>
-
-                <!-- BACK -->
-                <div class="flip-card-back">
-                    <p class="game-description">
-                        @(string.IsNullOrEmpty(game.Description)
-                            ? "Fara descriere."
-                            : (game.Description.Length > 300
-                                ? game.Description.Substring(0, 300) + "..."
-                                : game.Description))
-                    </p>
-                </div>
-            </div>
-
-            @if (isInSelected)
+        @* Filtrele le aplica games.js, pe cardurile deja incarcate. *@
+        <div class="chips" role="group" aria-label="Filtreaza aplicatiile">
+            <button type="button" class="chip" aria-pressed="true" data-filter-domain="">Toate</button>
+            @if (recommendedCount > 0)
             {
-                <div class="suitable">
-                    <span>Suitable for your selection ✔</span>
-                </div>
+                <button type="button" class="chip" aria-pressed="false" data-filter-recommended>
+                    <i class="bi bi-stars"></i> Recomandate
+                </button>
+            }
+            @foreach (var domain in domains)
+            {
+                <button type="button" class="chip" aria-pressed="false" data-filter-domain="@domain">@domain</button>
             }
         </div>
+    </div>
+
+    <div class="catalog-meta">
+        <span data-catalog-count aria-live="polite">@games.Count aplicatii</span>
+        <span>Apasa pe un card pentru descrierea completa.</span>
+    </div>
+}
+
+<div class="app-grid" data-catalog>
+    @foreach (var game in games)
+    {
+        var isRecommended = recommendedIds.Contains(game.GameId);
+
+        <article class="app-card" style="--hue: @game.GameName.Hue()" data-app
+                 data-domain="@game.DomainName" data-recommended="@(isRecommended ? "true" : "false")">
+            @if (canManage)
+            {
+                @* Atributele data-* le leaga admin.js; games.js nu extinde cardul la click pe ele. *@
+                <div class="app-card__admin">
+                    <button type="button" class="icon-btn icon-btn--edit" title="Editeaza" aria-label="Editeaza @game.GameName"
+                            data-modal-url="@Url.Action("Edit", new { id = game.GameId })" data-modal="#editGameModal">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button type="button" class="icon-btn icon-btn--danger" title="Sterge" aria-label="Sterge @game.GameName"
+                            data-modal-url="@Url.Action("Delete", new { id = game.GameId })" data-modal="#deleteGameModal">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                </div>
+            }
+
+            <div class="app-card__head">
+                <div class="app-icon" aria-hidden="true">@game.GameName.Initials()</div>
+                <div class="min-w-0">
+                    <h2 class="app-card__title">@game.GameName</h2>
+                    <span class="tag"><i class="bi bi-diagram-3"></i> @(game.DomainName ?? "Fara domeniu")</span>
+                </div>
+            </div>
+
+            <p class="app-card__desc">@(string.IsNullOrWhiteSpace(game.Description) ? "Fara descriere." : game.Description)</p>
+
+            <div class="app-card__foot">
+                @if (isRecommended)
+                {
+                    <span class="pill pill--info" title="Din domeniile alese de tine">Recomandat</span>
+                }
+                else
+                {
+                    <span></span>
+                }
+
+                @if (!string.IsNullOrEmpty(game.DownloadLink))
+                {
+                    <a class="btn btn-glow btn-sm" href="@game.DownloadLink" target="_blank" rel="noopener noreferrer">
+                        <i class="bi bi-download"></i> Descarca
+                    </a>
+                }
+                else
+                {
+                    <span class="app-card__unavailable">Link indisponibil</span>
+                }
+            </div>
+        </article>
     }
 
-    @if (User.HasPermission(Permissions.Games.Manage))
+    @if (canManage)
     {
-        <div class="game-card add-game-card" role="button" tabindex="0" aria-label="Adauga un joc"
+        <div class="app-card app-card--add" role="button" tabindex="0" aria-label="Adauga o aplicatie"
              data-modal-url="@Url.Action("Create")" data-modal="#createGameModal">
-            <div class="add-game-inner">
-                <i class="bi bi-plus-lg"></i>
-            </div>
+            <span class="icon-tile"><i class="bi bi-plus-lg"></i></span>
+            <strong>Adauga o aplicatie</strong>
+            <span class="small">Apare imediat in catalog</span>
         </div>
     }
 </div>
+
+<div class="empty-state" data-catalog-empty hidden>
+    <div class="icon-tile"><i class="bi bi-search"></i></div>
+    <h3>Nicio aplicatie gasita</h3>
+    <p>Incearca alt termen de cautare sau alt domeniu.</p>
+</div>
+
+@if (games.Count == 0)
+{
+    <div class="empty-state">
+        <div class="icon-tile"><i class="bi bi-box-seam"></i></div>
+        <h3>Catalogul este inca gol</h3>
+        <p>Aplicatiile adaugate de administratori vor aparea aici.</p>
+    </div>
+}
 
 @section Scripts {
     <script src="~/js/games.js" asp-append-version="true"></script>

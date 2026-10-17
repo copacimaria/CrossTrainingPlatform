@@ -154,15 +154,18 @@
 
     // ---------------- MESAJE (TOASTS) ----------------
 
+    // Culorile din data-toast-color devin clase din tema (toast-success etc., in app.css).
+    const TOAST_KINDS = { green: 'success', red: 'danger', grey: 'info' };
+
     function showToast(text, color) {
         // Toastify scrie textul cu innerText (escapeMarkup implicit), nu ca HTML.
         Toastify({
             text: text,
-            duration: 3000,
+            duration: 3500,
             close: true,
             gravity: 'bottom',
             position: 'center',
-            style: { background: color || 'green' }
+            className: 'toast-' + (TOAST_KINDS[color] || 'success')
         }).showToast();
     }
 
