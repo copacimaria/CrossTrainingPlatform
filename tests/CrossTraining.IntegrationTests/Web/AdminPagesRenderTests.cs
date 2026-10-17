@@ -104,6 +104,23 @@ public sealed class AdminPagesRenderTests : IDisposable
         }
     }
 
+    [SkippableFact]
+    public async Task CatalogulPentruCineAreGamesManage_AreButoaneleDeAdaugareEditareStergere()
+    {
+        // Adaugarea era doar cardul "+" de la capatul listei, iar editarea si stergerea
+        // apareau abia la trecerea mouse-ului: un administrator nu le gasea.
+        Skip.IfNot(_sql.IsAvailable, _sql.SkipReason);
+
+        using var client = _factory!.CreateClient();
+
+        var html = await client.GetStringAsync(Path("/Games/DisplayGamesBasedOnDomain"));
+
+        // Butonul din capul paginii, nu doar cardul "+".
+        html.ShouldContain("<button type=\"button\" class=\"btn btn-glow\" data-modal-url=\"/Games/Create\"");
+        html.ShouldContain($"data-modal-url=\"/Games/Edit/{_seed.GameId}\"");
+        html.ShouldContain($"data-modal-url=\"/Games/Delete/{_seed.GameId}\"");
+    }
+
     /// <summary>
     /// Paginile si modalele care primesc un model construit in controller si trimis unui
     /// partial: exact locul unde o nepotrivire de tip nu ar fi prinsa la compilare.

@@ -66,19 +66,29 @@
         </p>
     </div>
 
-    <div class="catalog-stats">
-        <div class="panel catalog-stat">
-            <span class="stat__value">@games.Count</span>
-            <span class="stat__label">aplicatii</span>
+    <div class="catalog-side">
+        <div class="catalog-stats">
+            <div class="panel catalog-stat">
+                <span class="stat__value">@games.Count</span>
+                <span class="stat__label">aplicatii</span>
+            </div>
+            <div class="panel catalog-stat">
+                <span class="stat__value">@recommendedCount</span>
+                <span class="stat__label">recomandate</span>
+            </div>
+            <div class="panel catalog-stat">
+                <span class="stat__value">@domains.Count</span>
+                <span class="stat__label">domenii</span>
+            </div>
         </div>
-        <div class="panel catalog-stat">
-            <span class="stat__value">@recommendedCount</span>
-            <span class="stat__label">recomandate</span>
-        </div>
-        <div class="panel catalog-stat">
-            <span class="stat__value">@domains.Count</span>
-            <span class="stat__label">domenii</span>
-        </div>
+
+        @if (canManage)
+        {
+            @* La vedere, nu doar cardul "+" de la capatul listei, pe care nu il gasea nimeni. *@
+            <button type="button" class="btn btn-glow" data-modal-url="@Url.Action("Create")" data-modal="#createGameModal">
+                <i class="bi bi-plus-lg"></i> Adauga o aplicatie
+            </button>
+        }
     </div>
 </section>
 

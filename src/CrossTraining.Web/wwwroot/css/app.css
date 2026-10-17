@@ -1778,6 +1778,19 @@ button.action-tile {
     font-size: clamp(2rem, 4.4vw, 3.2rem);
 }
 
+.catalog-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1rem;
+}
+
+@media (max-width: 767.98px) {
+    .catalog-side {
+        align-items: stretch;
+    }
+}
+
 .catalog-stats {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1943,6 +1956,7 @@ button.action-tile {
     border-top: 1px solid var(--line);
 }
 
+/* Mereu vizibile: ascunse pana la trecerea mouse-ului, administratorii nu le gaseau. */
 .app-card__admin {
     position: absolute;
     z-index: 2;
@@ -1950,19 +1964,6 @@ button.action-tile {
     right: 0.9rem;
     display: flex;
     gap: 0.35rem;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
-.app-card:hover .app-card__admin,
-.app-card:focus-within .app-card__admin {
-    opacity: 1;
-}
-
-@media (hover: none) {
-    .app-card__admin {
-        opacity: 1;
-    }
 }
 
 .app-card__unavailable {
