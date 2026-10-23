@@ -30,7 +30,7 @@
       intentionat; o urcare la 13 este o decizie de licentiere, nu una tehnica.
       Vezi ADR-0008.
     -->
-    <PackageVersion Include="MediatR" Version="12.4.1" />
+    <PackageVersion Include="MediatR" Version="14.2.0" />
     <!--
       FluentValidation a fost scos (ADR-0010): invariantii stau in entitati, iar
       validatoarele de comanda ii repetau.
