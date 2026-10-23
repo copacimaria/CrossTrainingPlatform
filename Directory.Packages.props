@@ -83,6 +83,6 @@
       EF Core 10.0.13). O versiune mai mica e refuzata la restore (NU1109); o versiune majora
       noua ar trece EF pe un driver cu care nu a fost testat.
     -->
-    <PackageVersion Include="Microsoft.Data.SqlClient" Version="6.1.7" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.1" />
   </ItemGroup>
 </Project>
